@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import antlr3
 from build.VPLLexer import VPLLexer
