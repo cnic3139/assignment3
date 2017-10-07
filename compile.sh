@@ -9,7 +9,7 @@ if [ ${#} != 1 ]; then
 fi
 
 # builds the ANTLR-generated parse using the grammar file
-java -cp antlr-3.1.2.jar org.antlr.Tool -o ${BUILD_DIR} VPL.g
+java -cp antlr-4.7.jar org.antlr.Tool -o ${BUILD_DIR} VPL.g
 touch ${BUILD_DIR}/__init__.py
 
 # uses the ANTLR-generated parser to convert the VPL program to ASM
