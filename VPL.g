@@ -1,46 +1,69 @@
 grammar VPL;
 
-M : F M
+start: m;
+
+m : f m
   | /* epsilon */
   ;
 
-F : func ident P D S end
+f : FUNC IDENT p d s END
   ;
 
-P : '(' L ')'
+FUNC: 'func';
+
+END: 'end';
+
+VAR: 'var';
+
+IF: 'if';
+
+WHILE: 'while';
+
+THEN: 'then';
+
+DO: 'do';
+
+ENDIF: 'while';
+
+ENDWHILE: 'endwhile';
+
+p : '(' l ')'
   ;
 
-L : ident
-  | ident ',' L
+l : IDENT
+  | IDENT ',' l
   ;
 
-D : var L ';'
+d : 'var' l ';'
   | /* epsilon */
   ;
 
-S : if C then S endif
-  | while C do S endwhile
-  | S ';' S
-  | ident '=' E
+s : IF c THEN s ENDIF r
+  | WHILE c DO s ENDWHILE r
+  | IDENT '=' e r
+  | r
+  ;
+
+r : ';' s
   | /* epsilon */
   ;
 
-E : add '(' E ',' E ')'
-  | minus '(' E ',' E ')'
-  | mult '(' E ',' E ')'
-  | div '(' E ',' E ')'
-  | min '(' E ',' E ')'
-  | '(' E ')'
-  | ident
-  | num
+e : 'add' '(' e ',' e ')'
+  | 'minus' '(' e ',' e ')'
+  | 'mult' '(' e ',' e ')'
+  | 'div' '(' e ',' e ')'
+  | 'min' '(' e ',' e ')'
+  | '(' e ')'
+  | IDENT
+  | NUM
   ;
 
-C : E '<' num
-  | E '>' num
+c : e '<' NUM
+  | e '>' NUM
   ;
 
-ident : [a-zA-Z_][a-zA-Z0-9_]*
+IDENT : ('a'..'z' | 'A'..'Z' | '_' ) ('a'..'z' | 'A'..'Z' | '0'..'9' | '_' )*
       ;
 
-num : [0-9]+(\.[0-9]+)?
+NUM : ('0'..'9')+ ('.'('0'..'9')+)?
     ;
