@@ -1,2 +1,8 @@
 .DS_Store
 /build
+VPLLexer.py
+VPLLexer.tokens
+VPLListener.tokens
+VPLListener.py
+VPLParser.py
+
