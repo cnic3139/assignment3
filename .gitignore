@@ -6,4 +6,5 @@ VPLListener.tokens
 VPLListener.py
 VPLParser.py
 VPL.tokens
+*.s
 
