@@ -6,26 +6,8 @@ m : f m
   | /* epsilon */
   ;
 
-f : FUNC IDENT p d s END
+f : 'func' IDENT p d s 'end'
   ;
-
-FUNC: 'func';
-
-END: 'end';
-
-VAR: 'var';
-
-IF: 'if';
-
-WHILE: 'while';
-
-THEN: 'then';
-
-DO: 'do';
-
-ENDIF: 'while';
-
-ENDWHILE: 'endwhile';
 
 p : '(' l ')'
   ;
@@ -38,8 +20,8 @@ d : 'var' l ';'
   | /* epsilon */
   ;
 
-s : IF c THEN s ENDIF r
-  | WHILE c DO s ENDWHILE r
+s : 'if' c 'then' s 'endif' r
+  | 'while' c 'do' s 'endwhile' r
   | IDENT '=' e r
   | r
   ;
@@ -62,8 +44,9 @@ c : e '<' NUM
   | e '>' NUM
   ;
 
-IDENT : ('a'..'z' | 'A'..'Z' | '_' ) ('a'..'z' | 'A'..'Z' | '0'..'9' | '_' )*
-      ;
+IDENT : ( 'a'..'z' | 'A'..'Z' | ' _' )( 'a'..'z' | 'A'..'Z' | '0'..'9' | '_' )*
+  ;
 
-NUM : ('0'..'9')+ ('.'('0'..'9')+)?
-    ;
+NUM : ( '0'..'9' )+ ('.'( '0'..'9' )+)?;
+
+UNICODE_WS : [\p{White_Space}] -> skip; // match all Unicode whitespace

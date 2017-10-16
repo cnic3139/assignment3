@@ -13,7 +13,8 @@ java -jar /usr/local/lib/antlr-4.7-complete.jar -Dlanguage=Python3 -o ${BUILD_DI
 touch ${BUILD_DIR}/__init__.py
 
 # uses the ANTLR-generated parser to convert the VPL program to ASM
-./vpl2asm.py ${1} > ${1}.s
+./vpl2asm.py ${1} > /dev/null # ANTLR warnings are annoying
+                              # write to file for output instead?
 
 # compiles the ASM and C file together
 gcc -Wall -W main.c ${1}.s -o my_program
