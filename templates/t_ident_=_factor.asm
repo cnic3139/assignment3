@@ -1,5 +1,7 @@
-	<load source address into %rax>
-	<load destination address into %r10>
+	# Load source address into %rax
+	<load-rax>
+	# Load destination address into %r10
+	<load-r10>
 
 	movq   %rdi,   %rbx   # load vector length into counter %rbx
 	shrq   $2,     %rbx   # divide counter reg by 4

@@ -11,9 +11,11 @@
 	# save callee-save registers that are used on stack
 	pushq %rbx
 
-	<allocate memory for local vector variables>
+	# Allocate memory for local vector variables
+	<allocate>
 
-	<insert the body of function here>
+	# Insert the body of function here
+	<insert>
 
 	# epilogue of a function
 	popq  %rbx # restore reg %rbx

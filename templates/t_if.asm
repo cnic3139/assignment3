@@ -1,8 +1,10 @@
-	<template for condition(.true-branch<NUM>, .false-branch<NUM>)>
+	# Template for conditional(.true-branch<NUM>, .false-branch<NUM>)
+	<template>
 
 .true-branch<NUM>:
-
-	<emit code for true-branch here>
+	
+	# Emit code for true-branch here
+	<true-branch>
 
 	jmp .endif<NUM>
 

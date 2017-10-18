@@ -1,9 +1,11 @@
 	jmp .loopcond<NUM>
 
 .loopbegin<NUM>:
-	<emit code for loop-body here>
+	# Emit code for loop-body here
+	<loop-body>
 
 .loopcond<NUM>:
-	<template for condition (.loopbegin<NUM>, .loopexit<NUM>)>
+	# Emit code for condition (.loopbegin<NUM>, .loopexit<NUM>)
+	<template>
 
 .loopend<NUM>:

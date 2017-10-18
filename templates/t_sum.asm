@@ -1,9 +1,10 @@
-	<load source address into %rax>
+	# Load source address into %rax
+	<load-source-rax>
 
 	xorps   %xmm1,  %xmm1       # set register %xmm1 to zero
 	movq    %rdi,   %rbx        # load vector length into counter %rbx
 	shrq    $2,     %rbx        # divide counter reg by 4
-	                           # (per loop iteratoin 4 floats)
+	                            # (per loop iteratoin 4 floats)
 	jz      .loop_end<X>        # check whether number is equal to zero
 
 .loop-begin<X>:                # loop header

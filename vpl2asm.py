@@ -29,7 +29,18 @@ def main(argv):
 
 
 def eventHandler(node, direction):
-    pass
+    return {
+        "start": "",
+        "m": "",
+        "f": "",
+        "p": "",
+        "l": "",
+        "d": "",
+        "s": "",
+        "r": "",
+        "e": "",
+        "c": "",
+    }[node]
 
 
 def genText():
