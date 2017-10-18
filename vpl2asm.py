@@ -13,14 +13,117 @@ def main(argv):
     parser = VPLParser(tokens)
     tree = parser.start()
 
-    listener = myListener.myListener()
+    listener = myListener.myListener(eventHandler())
     walker = ParseTreeWalker()
     walker.walk(listener, tree)
 
     for token in tokens.tokens:
         print("token: ", token.text)
 
+    file = open("out.s", "W+")
+    # Iterate through parse tree, using template
+    generatedText = genText()
+    for line in generatedText:
+        file.write(line)
+    file.close()
 
+
+def eventHandler(node, direction):
+    pass
+
+
+def genText():
+    programList = []  # list of lines for program
+    return "\n".join(programList)
+
+
+def addressCon(programList, lineNo, const, destreg):
+    template = open("templates/t_address_con.asm", "r")
+    for line in template.readlines():
+        for word in line.split():
+            if word == "<X>":
+                word = const
+            else if word == "$.const<X>":
+                word = "$.const" + const
+            else if word == "<destreg>":
+                word = destreg
+        programList.insert(index, line)
+    template.close()
+
+
+def addressVar():
+    template = open("templates/t_address_var.asm", "r")
+    # TODO
+    template.close()
+
+
+def addressVec():
+    template = open("templates/t_address_vec.asm", "r")
+    # TODO
+    template.close()
+
+
+def allocate(programList, lineNo):
+    # Add template in file at given lineNo
+
+    # Determine number of local vars to allocate
+
+    # Replace <NUM> with num of local vars to allocate
+    template = open("templates/t_allocate.asm", "r")
+    # TODO
+    template.close()
+
+
+def function():
+    # Add template in file at given lineNo
+
+    # Replace <name> with function name
+
+    # In template, replace <allocate> with allocation of variables
+
+    # In template, replaces <body> with body of function
+    template = open("templates/t_function.asm", "r")
+    # TODO
+    template.close()
+
+
+def genConst():
+    # Add template in file at given lineNo
+
+    # 
+    template = open("templates/t_gen_const.asm", "r")
+    # TODO
+    template.close()
+
+
+def identEqFactor():
+    template = open("templates/t_ident_=_factor.asm", "r")
+    # TODO
+    template.close()
+
+
+def identEqOpFactorFactor():
+    template = open("templates/t_ident_=_op(factor,_factor).asm", "r")
+    # TODO
+    template.close()
+
+
+def t_if():
+    template = open("templates/t_if.asm", "r")
+    # TODO
+    template.close()
+
+
+def t_sum():
+    template = open("templates/t_sum.asm", "r")
+    # TODO
+    template.close()
+
+
+def t_while():
+    template = open("templates/t_while.asm", "r")
+    # TODO
+    template.close()
 
 if __name__ == '__main__':
     main(sys.argv)
