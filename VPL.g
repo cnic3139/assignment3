@@ -6,14 +6,14 @@ m : f m
   | /* epsilon */
   ;
 
-f : 'func' IDENT p d s 'end'
+f : 'func' ident p d s 'end'
   ;
 
 p : '(' l ')'
   ;
 
-l : IDENT
-  | IDENT ',' l
+l : ident
+  | ident ',' l
   ;
 
 d : 'var' l ';'
@@ -22,7 +22,7 @@ d : 'var' l ';'
 
 s : 'if' c 'then' s 'endif' r
   | 'while' c 'do' s 'endwhile' r
-  | IDENT '=' e r
+  | ident '=' e r
   | r
   ;
 
@@ -36,16 +36,19 @@ e : 'add' '(' e ',' e ')'
   | 'div' '(' e ',' e ')'
   | 'min' '(' e ',' e ')'
   | '(' e ')'
-  | IDENT
-  | NUM
+  | ident
+  | num
   ;
 
-c : e '<' NUM
-  | e '>=' NUM
+c : e '<' num
+  | e '>=' num
   ;
 
-IDENT : ( 'a'..'z' | 'A'..'Z' | ' _' )( 'a'..'z' | 'A'..'Z' | '0'..'9' | '_' )*
-  ;
+ident : IDENT;
+
+num : NUM;
+
+IDENT : ( 'a'..'z' | 'A'..'Z' | ' _' )( 'a'..'z' | 'A'..'Z' | '0'..'9' | '_' )*;
 
 NUM : ( '0'..'9' )+ ('.'( '0'..'9' )+)?;
 

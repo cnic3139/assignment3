@@ -16,7 +16,7 @@ def main(argv):
     parser = VPLParser(tokens)
     tree = parser.start()
 
-    listener = myListener.myListener(eventHandler())
+    listener = myListener.myListener(eventHandler)
     walker = ParseTreeWalker()
     walker.walk(listener, tree)
     return
