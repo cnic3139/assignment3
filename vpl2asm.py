@@ -6,6 +6,9 @@ from build.VPLParser import VPLParser
 import myListener
 
 
+parseTree = []
+
+
 def main(argv):
     char_stream = FileStream(argv[1])
     lexer = VPLLexer(char_stream)
@@ -16,7 +19,7 @@ def main(argv):
     listener = myListener.myListener(eventHandler())
     walker = ParseTreeWalker()
     walker.walk(listener, tree)
-
+    return
     for token in tokens.tokens:
         print("token: ", token.text)
 
@@ -29,18 +32,7 @@ def main(argv):
 
 
 def eventHandler(node, direction):
-    return {
-        "start": "",
-        "m": "",
-        "f": "",
-        "p": "",
-        "l": "",
-        "d": "",
-        "s": "",
-        "r": "",
-        "e": "",
-        "c": "",
-    }[node]
+    parseTree.append((node, direction))
 
 
 def genText():
@@ -54,9 +46,9 @@ def addressCon(programList, lineNo, const, destreg):
         for word in line.split():
             if word == "<X>":
                 word = const
-            else if word == "$.const<X>,":
+            elif word == "$.const<X>,":
                 word = "$.const" + const + ","
-            else if word == "<destreg>":
+            elif word == "<destreg>":
                 word = destreg
         programList.insert(lineNo + 1, line)
         lineNo += 1
@@ -70,9 +62,9 @@ def addressVar(programList, lineNo, var, destReg):
         for word in line:
             if word == "$<N>,":
                 word = "$" + var + ","
-            else if word == "<destreg>":
+            elif word == "<destreg>":
                 word = destReg
-            else if word == "<destreg>,":
+            elif word == "<destreg>,":
                 word = destReg + ","
         programList.insert(lineNo + 1, line)
         lineNo += 1
@@ -86,7 +78,7 @@ def addressVec(programList, lineNo, argReg, destReg):
         for word in line.split():
             if word == "<argreg-N+1>,":
                 word = argReg + ","
-            else if word == "<destreg>":
+            elif word == "<destreg>":
                 word = destReg
         programList.insert(lineNo + 1, line)
         lineNo += 1
@@ -124,9 +116,9 @@ def function(programList, lineNo, name):
         for word in line:
             if word == "<name>":
                 word = name
-            else if word == "<name>:":
+            elif word == "<name>:":
                 word = name + ":"
-            else if word == "<name>,":
+            elif word == "<name>,":
                 word = name + ","
         programList.insert(lineNo + 1, line)
         lineNo += 1
@@ -141,7 +133,7 @@ def genConst(programList, lineNo, const):
         for word in line:
             if word == ".const<X>:":
                 word = ".const" + const + ":"
-            else if word == "<X>":
+            elif word == "<X>":
                 word = const
         programList.insert(lineNo + 1, line)
         lineNo += 1
