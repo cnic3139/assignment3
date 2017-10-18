@@ -43,38 +43,64 @@ def addressCon(programList, lineNo, const, destreg):
         for word in line.split():
             if word == "<X>":
                 word = const
-            else if word == "$.const<X>":
-                word = "$.const" + const
+            else if word == "$.const<X>,":
+                word = "$.const" + const + ","
             else if word == "<destreg>":
                 word = destreg
-        programList.insert(index, line)
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo  # Lists pass by reference, ints by value
 
 
-def addressVar():
+def addressVar(programList, lineNo, var, destReg):
     template = open("templates/t_address_var.asm", "r")
-    # TODO
+    for line in template.readlines():
+        for word in line:
+            if word == "$<N>,":
+                word = "$" + var + ","
+            else if word == "<destreg>":
+                word = destReg
+            else if word == "<destreg>,":
+                word = destReg + ","
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo
 
 
-def addressVec():
+def addressVec(programList, lineNo, argReg, destReg):
     template = open("templates/t_address_vec.asm", "r")
-    # TODO
+    for line in template.readlines():
+        for word in line.split():
+            if word == "<argreg-N+1>,":
+                word = argReg + ","
+            else if word == "<destreg>":
+                word = destReg
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo
 
 
-def allocate(programList, lineNo):
+def allocate(programList, lineNo, num):
     # Add template in file at given lineNo
 
     # Determine number of local vars to allocate
 
     # Replace <NUM> with num of local vars to allocate
     template = open("templates/t_allocate.asm", "r")
-    # TODO
+    for line in template.readlines():
+        for word in line:
+            if word == "$<NUM>,":
+                word = "$" + num + ","
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo
 
 
-def function():
+def function(programList, lineNo, name):
     # Add template in file at given lineNo
 
     # Replace <name> with function name
@@ -83,17 +109,33 @@ def function():
 
     # In template, replaces <body> with body of function
     template = open("templates/t_function.asm", "r")
-    # TODO
+    for line in template.readlines():
+        for word in line:
+            if word == "<name>":
+                word = name
+            else if word == "<name>:":
+                word = name + ":"
+            else if word == "<name>,":
+                word = name + ","
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo
 
 
-def genConst():
+def genConst(programList, lineNo, const):
     # Add template in file at given lineNo
-
-    # 
     template = open("templates/t_gen_const.asm", "r")
-    # TODO
+    for line in template.readlines():
+        for word in line:
+            if word == ".const<X>:":
+                word = ".const" + const + ":"
+            else if word == "<X>":
+                word = const
+        programList.insert(lineNo + 1, line)
+        lineNo += 1
     template.close()
+    return lineNo
 
 
 def identEqFactor():
