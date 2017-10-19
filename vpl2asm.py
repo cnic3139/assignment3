@@ -52,13 +52,13 @@ def mHandler(programList, lineNo):
 def addressCon(programList, lineNo, const, destreg):
     template = open("templates/t_address_con.asm", "r")
     for line in template.readlines():
-        for word in line.split():
+        for i, word in enumerate(line.split()):
             if word == "<X>":
-                word = const
+                line[i] = const
             elif word == "$.const<X>,":
-                word = "$.const" + const + ","
+                line[i] = "$.const" + const + ","
             elif word == "<destreg>":
-                word = destreg
+                line[i] = destreg
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -68,13 +68,13 @@ def addressCon(programList, lineNo, const, destreg):
 def addressVar(programList, lineNo, var, destReg):
     template = open("templates/t_address_var.asm", "r")
     for line in template.readlines():
-        for word in line:
+        for i, word in enumerate(line.split()):
             if word == "$<N>,":
-                word = "$" + var + ","
+                line[i] = "$" + var + ","
             elif word == "<destreg>":
-                word = destReg
+                line[i] = destReg
             elif word == "<destreg>,":
-                word = destReg + ","
+                line[i] = destReg + ","
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -84,11 +84,11 @@ def addressVar(programList, lineNo, var, destReg):
 def addressVec(programList, lineNo, argReg, destReg):
     template = open("templates/t_address_vec.asm", "r")
     for line in template.readlines():
-        for word in line.split():
+        for i, word in enumerate(line.split()):
             if word == "<argreg-N+1>,":
-                word = argReg + ","
+                line[i] = argReg + ","
             elif word == "<destreg>":
-                word = destReg
+                line[i] = destReg
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -103,9 +103,9 @@ def allocate(programList, lineNo, num):
     # Replace <NUM> with num of local vars to allocate
     template = open("templates/t_allocate.asm", "r")
     for line in template.readlines():
-        for word in line:
+        for i, word in enumerate(line.split()):
             if word == "$<NUM>,":
-                word = "$" + num + ","
+                line[i] = "$" + num + ","
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -129,13 +129,13 @@ def function(programList, lineNo, name):
 
     template = open("templates/t_function.asm", "r")
     for line in template.readlines():
-        for word in line:
+        for i, word in enumerate(line.split()):
             if word == "<name>":
-                word = name
+                line[i] = name
             elif word == "<name>:":
-                word = name + ":"
+                line[i] = name + ":"
             elif word == "<name>,":
-                word = name + ","
+                line[i] = name + ","
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -146,11 +146,11 @@ def genConst(programList, lineNo, const):
     # Add template in file at given lineNo
     template = open("templates/t_gen_const.asm", "r")
     for line in template.readlines():
-        for word in line:
+        for i, word in enumerate(line.split()):
             if word == ".const<X>:":
-                word = ".const" + const + ":"
+                line[i] = ".const" + const + ":"
             elif word == "<X>":
-                word = const
+                line[i] = const
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
