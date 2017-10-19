@@ -128,15 +128,29 @@ def function(programList, lineNo, name):
     parseTreeIndex += 1
 
     template = open("templates/t_function.asm", "r")
+    templateInserted = False
     for line in template.readlines():
         for i, word in enumerate(line.split()):
+            templateInserted = False
             if word == "<name>":
                 line[i] = name
             elif word == "<name>:":
                 line[i] = name + ":"
             elif word == "<name>,":
                 line[i] = name + ","
-        programList.insert(lineNo + 1, line)
+            elif word == "<allocate>":
+                # Look over tokens - between var & ;, number of tokens
+                #  (excluding ',') is the number of variables to be declared
+                templateInserted = True
+                lineNo = allocate(programList, lineNo, )  # Find args!!!!!
+            elif word == "<insert>":
+                templateInserted = True
+                # TODO
+                pass
+        if templateInserted:
+            programList.insert(lineNo + 1, "\n")
+        else:
+            programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
     return lineNo
