@@ -6,23 +6,10 @@ from build.VPLParser import VPLParser
 import myListener
 
 
-parseTree = []
-
-
-def main(argv):
-    char_stream = FileStream(argv[1])
-    lexer = VPLLexer(char_stream)
-    tokens = CommonTokenStream(lexer)
-    parser = VPLParser(tokens)
-    tree = parser.start()
-
-    listener = myListener.myListener(eventHandler)
-    walker = ParseTreeWalker()
-    walker.walk(listener, tree)
-    return
+def main():
     for token in tokens.tokens:
         print("token: ", token.text)
-
+    return
     file = open("out.s", "W+")
     # Iterate through parse tree, using template
     generatedText = genText()
@@ -37,7 +24,29 @@ def eventHandler(node, direction):
 
 def genText():
     programList = []  # list of lines for program
+    # Ensure first index in parseTree is start symb
+    if parseTree[parseTreeIndex] != ("start", "enter"):
+        sys.exit(1)
+    parseTreeIndex += 1
+
+    lineNo = 0
+    lineNo = mHandler(programList, lineNo)
+
     return "\n".join(programList)
+
+
+def mHandler(programList, lineNo):
+    while True:
+        if parseTree[parseTreeIndex] != ("m", "enter"):
+            sys.exit(1)
+        parseTreeIndex += 1
+
+        if parseTree[parseTreeIndex] == ("m", "exit"):
+            parseTreeIndex += 1
+            break  # Out of infinite loop
+        else:
+            lineNo = function(programList, lineNo, tokensIndex)
+    return lineNo
 
 
 def addressCon(programList, lineNo, const, destreg):
@@ -111,6 +120,13 @@ def function(programList, lineNo, name):
     # In template, replace <allocate> with allocation of variables
 
     # In template, replaces <body> with body of function
+
+    # TokensIndex should be at index of "func"
+
+    if parseTree[parseTreeIndex] != ("f", "enter"):
+        sys.exit(1)
+    parseTreeIndex += 1
+
     template = open("templates/t_function.asm", "r")
     for line in template.readlines():
         for word in line:
@@ -170,5 +186,19 @@ def t_while():
     # TODO
     template.close()
 
+
+parseTree = []
+parseTreeIndex = 0
+
+char_stream = FileStream(sys.argv[1])
+lexer = VPLLexer(char_stream)
+tokens = CommonTokenStream(lexer)
+tokensIndex = 0
+parser = VPLParser(tokens)
+tree = parser.start()
+listener = myListener.myListener(eventHandler)
+walker = ParseTreeWalker()
+walker.walk(listener, tree)
+
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
