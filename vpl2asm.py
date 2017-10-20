@@ -18,14 +18,17 @@ Returns: No value returned.
 def main():
     for token in tokens.tokens:
         print("token: ", token.text)
-    return
     # output name should be same as input!
-    
-    file = open("out.s", "W+")
+
+    print("\ngentext len\n")
+    file = open("out.s", "w")
+
     # Iterate through parse tree, using template
     generatedText = genText()
+    print("\ngentext len\n", len(generatedText))
     for line in generatedText:
         file.write(line)
+        file.write("hello")
     file.close()
 
 
@@ -54,14 +57,18 @@ Returns: Program list as a string.
 
 
 def genText():
+    global parseTreeIndex
     programList = []  # list of lines for program
     # Ensure first index in parseTree is start symb
     if parseTree[parseTreeIndex] != ("start", "enter"):
+        print("System exit genText")
         sys.exit(1)
     parseTreeIndex += 1
 
     lineNo = 0
+    print("Error mHandler")
     lineNo = mHandler(programList, lineNo)
+    print("Error mHandler2")
 
     return "\n".join(programList)
 
@@ -75,22 +82,32 @@ Returns: lineNo as an integer.
 
 
 def mHandler(programList, lineNo):
+    global parseTreeIndex, tokensIndex
     funcNum = 0
     while True:
-        if parseTree[parseTreeIndex] != ("m", "enter"):
-            sys.exit(1)
+        print("parse pair", parseTree[parseTreeIndex], parseTreeIndex)
+
+        # if parseTree[parseTreeIndex] != ("m", "enter"):
+        #     print("System Exit mHandler")
+        #     sys.exit(1)
         parseTreeIndex += 1
 
         if parseTree[parseTreeIndex] == ("m", "exit"):
             parseTreeIndex += 1
             break  # Out of infinite loop
         else:
-            while tokens.tokens[tokensIndex] != "func":
-                tokensIndex += 1
-            tokensIndex += 1
-            name = tokens.tokens[tokensIndex]
-            lineNo = function(programList, lineNo, name, funcNum)
-            funcNum += 1
+            print(tokensIndex)
+            print(tokens.tokens[tokensIndex].text)
+            while tokensIndex < len(tokens.tokens):
+                print("tokenI: {0}, token: {1}".format(tokensIndex, tokens.tokens[tokensIndex].text))
+                if tokens.tokens[tokensIndex].text != "func":
+                    tokensIndex += 1
+                else:
+                    tokensIndex += 1
+                    name = tokens.tokens[tokensIndex].text
+                    print("mHandler Function Call")
+                    lineNo = function(programList, lineNo, name, funcNum)
+                    funcNum += 1
     return lineNo
 
 
@@ -108,13 +125,15 @@ def addressCon(programList, lineNo, const, destreg):
     template = open("templates/t_address_con.asm", "r")
 
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<X>":
-                line[i] = const
+                tempLine.append(const)
             elif word == "$.const<X>,":
-                line[i] = "$.const" + const + ","
+                tempLine.append("$.const" + const + ",")
             elif word == "<destreg>":
-                line[i] = destreg
+                tempLine.append(destreg)
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -134,13 +153,15 @@ Returns: lineNo as an integer.
 def addressVar(programList, lineNo, var, destReg):
     template = open("templates/t_address_var.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "$<N>,":
-                line[i] = "$" + var + ","
+                tempLine.append("$" + var + ",")
             elif word == "<destreg>":
-                line[i] = destReg
+                tempLine.append(destReg)
             elif word == "<destreg>,":
-                line[i] = destReg + ","
+                tempLine.append(destReg + ",")
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -160,11 +181,13 @@ Returns: lineNo as an integer.
 def addressVec(programList, lineNo, argReg, destReg):
     template = open("templates/t_address_vec.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<argreg-N+1>,":
-                line[i] = argReg + ","
+                tempLine.append(argReg + ",")
             elif word == "<destreg>":
-                line[i] = destReg
+                tempLine.append(destReg)
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -188,9 +211,11 @@ def allocate(programList, lineNo, num):
     # Replace <NUM> with num of local vars to allocate
     template = open("templates/t_allocate.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "$<NUM>,":
-                line[i] = "$" + num + ","
+                tempLine.append("$" + str(num) + ",")
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -208,6 +233,7 @@ Returns: lineNo as an integer.
 
 
 def function(programList, lineNo, name, funcNum):
+    global parseTreeIndex, tokensIndex
     # Add template in file at given lineNo
 
     # Replace <name> with function name
@@ -217,6 +243,7 @@ def function(programList, lineNo, name, funcNum):
     # In template, replaces <body> with body of function
 
     # tokensIndex should be at index of "func"
+    print("Function called!", parseTree[parseTreeIndex], parseTreeIndex)
 
     if parseTree[parseTreeIndex] != ("f", "enter"):
         sys.exit(1)
@@ -230,13 +257,13 @@ def function(programList, lineNo, name, funcNum):
     # So we want to traverse the parameters and add them to listPars, with
     #  the parameter as key and index as value
     tokensIndex += 1
-    if tokens.tokens[tokensIndex] != "(":
+    if tokens.tokens[tokensIndex].text != "(":
         print("Something went wrong in method 'function'")
         sys.exit(1)
     tokensIndex += 1
-    while tokens.tokens[tokensIndex] != ")":
-        if tokens.tokens[tokensIndex] != ",":
-            listPars.append(tokens.tokens[tokensIndex])
+    while tokens.tokens[tokensIndex].text != ")":
+        if tokens.tokens[tokensIndex].text != ",":
+            listPars.append(tokens.tokens[tokensIndex].text)
         tokensIndex += 1
 
     # After that should come the declaration of variables, so we can traverse
@@ -244,25 +271,34 @@ def function(programList, lineNo, name, funcNum):
     # tokensIndex should be pointing at ")" now
     # So next token should be "var" if there are variables declared
     tokensIndex += 1
-    if tokens.tokens[tokensIndex] == 'var':
+    if tokens.tokens[tokensIndex].text == 'var':
         tokensIndex += 1
-        while tokens.tokens[tokensIndex] != ";":
-            if tokens.tokens[tokensIndex] != ',':
-                listVars.append(tokens.tokens[tokensIndex])
+        while tokens.tokens[tokensIndex].text != ";":
+            if tokens.tokens[tokensIndex].text != ',':
+                listVars.append(tokens.tokens[tokensIndex].text)
+    tokensIndex = 0
 
     # SECTION FOR GETTING PARS & VARS IN LIST =================================
 
     template = open("templates/t_function.asm", "r")
     templateInserted = False
+    # i = 0
     for line in template.readlines():
+        # if i > 1:
+            # break
+        tempLine = []
         for i, word in enumerate(line.split()):
+            # print("\nLINE\n", line)
+            # print(line[i], i)
+            # print("word:", word)
+            # print("name:", name)
             templateInserted = False
             if word == "<name>":
-                line[i] = name
+                tempLine.append(name)
             elif word == "<name>:":
-                line[i] = name + ":"
+                tempLine.append(name + ":")
             elif word == "<name>,":
-                line[i] = name + ","
+                tempLine.append(name + ",")
             elif word == "<allocate>":
                 # Look over tokens - between var & ;, number of tokens
                 #  (excluding ',') is the number of variables to be declared
@@ -280,11 +316,16 @@ def function(programList, lineNo, name, funcNum):
                 else:
                     # Must start with IDENT
                     pass
+            else:
+                tempLine.append(word)
+        print("FINAL LINE: ", tempLine)
+        line = tempLine
         if templateInserted:
             programList.insert(lineNo + 1, "\n")
         else:
             programList.insert(lineNo + 1, line)
         lineNo += 1
+        # i += 1
     template.close()
     return lineNo
 
@@ -302,11 +343,13 @@ def genConst(programList, lineNo, const):
     # Add template in file at given lineNo
     template = open("templates/t_gen_const.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == ".const<X>:":
-                line[i] = ".const" + const + ":"
+                tempLine.append(".const" + const + ":")
             elif word == "<X>":
-                line[i] = const
+                tempLine.append(const)
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -325,19 +368,21 @@ Returns: lineNo as an integer.
 def identEqFactor(programList, lineNo):
     template = open("templates/t_ident_=_factor.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<load-rax>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<load-r10>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".loop-end<X>":
-                line[i] = ".loop-end" + num
+                tempLine.append(".loop-end" + num)
             elif word == ".loop-end<X>:":
-                line[i] = ".loop-end" + num + ":"
+                tempLine.append(".loop-end" + num + ":")
             elif word == ".loop-begin<X>":
-                line[i] = ".loop-begin" + num
+                tempLine.append(".loop-begin" + num)
             elif word == ".loop-begin<X>:":
-                line[i] = ".loop-begin" + num + ":"
+                tempLine.append(".loop-begin" + num + ":")
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -356,23 +401,25 @@ Returns: lineNo as an integer.
 def identEqOpFactorFactor(programList, lineNo, num):
     template = open("templates/t_ident_=_op(factor,_factor).asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<load-source1-rax>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<load-source2-r10>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<load-dest-r11>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".loop-begin<X>":
-                line[i] = ".loop-begin" + num
+                tempLine.append(".loop-begin" + num)
             elif word == ".loop-begin<X>:":
-                line[i] = ".loop-begin" + num + ":"
+                tempLine.append(".loop-begin" + num + ":")
             elif word == ".loop-end<X>":
-                line[i] = ".loop-end" + num
+                tempLine.append(".loop-end" + num)
             elif word == ".loop-end<X>:":
-                line[i] = ".loop-end" + num + ":"
+                tempLine.append(".loop-end" + num + ":")
             elif word == "<operation>":
-                line[i] = ""
+                tempLine.append("")
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -391,21 +438,23 @@ Returns: lineNo as an integer.
 def t_if(programList, lineNo):
     template = open("templates/t_if.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<template>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<true-branch>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<false-branch>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".true-branch<NUM>":
-                line[i] = ".true-branch" + num
+                tempLine.append(".true-branch" + num)
             elif word == ".false-branch<NUM>":
-                line[i] = ".false-branch" + num
+                tempLine.append(".false-branch" + num)
             elif word == ".endif<NUM>":
-                line[i] = ".endif" + num
+                tempLine.append(".endif" + num)
             elif word == ".endif<NUM>:":
-                line[i] = ".endif" + num + ":"
+                tempLine.append(".endif" + num + ":")
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -424,27 +473,29 @@ Returns: lineNo as an integer.
 def t_sum(programList, lineNo, num):
     template = open("templates/t_sum.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == "<load-source-rax>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".loop-begin<X>":
-                line[i] = ".loop-begin" + num
+                tempLine.append(".loop-begin" + num)
             elif word == ".loop-begin<X>:":
-                line[i] = ".loop-begin" + num + ":"
+                tempLine.append(".loop-begin" + num + ":")
             elif word == ".loop-end<X>":
-                line[i] = ".loop-end" + num
+                tempLine.append(".loop-end" + num)
             elif word == ".loop-end<X>:":
-                line[i] = ".loop-end" num + ":"
+                tempLine.append(".loop-end" + num + ":")
             elif word == "<true>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<false>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<NUMBER>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".L<NUMBER>:":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == ".L<NUMBER>,":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
@@ -463,19 +514,21 @@ Returns: lineNo as an integer.
 def t_while(programList, lineNo, num):
     template = open("templates/t_while.asm", "r")
     for line in template.readlines():
+        tempLine = []
         for i, word in enumerate(line.split()):
             if word == ".loopcond<NUM>":
-                line[i] = ".loopcond" + num
+                tempLine.append(".loopcond" + num)
             elif word == ".loopcond<NUM>:":
-                line[i] = ".loopcond" + num + ":"
+                tempLine.append(".loopcond" + num + ":")
             elif word == ".loopbegin<NUM>":
-                line[i] = ".loopbegin" + num
+                tempLine.append(".loopbegin" + num)
             elif word == ".loopend<NUM>":
-                line[i] = ".loopend" + num
+                tempLine.append(".loopend" + num)
             elif word == "<loop-body>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
             elif word == "<template>":
-                line[i] = ""  # TODO
+                tempLine.append("")  # TODO
+        line = tempLine
         programList.insert(lineNo + 1, line)
         lineNo += 1
     template.close()
