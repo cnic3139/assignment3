@@ -1,1 +1,1 @@
-func a ( b ) end
+func a ( b ) if b < 3 then b = 3 endif end
