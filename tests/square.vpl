@@ -1,0 +1,3 @@
+func square (a, c)
+	c = mult(a, a)
+end
