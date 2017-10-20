@@ -9,7 +9,8 @@ import myListener
 '''
 Method: main
 Parameters: none
-Description: Main method, first function to be executed after 
+Description: Main method, first function to be executed after code outside
+ methods.
 Returns: No value returned.
 '''
 
@@ -19,6 +20,7 @@ def main():
         print("token: ", token.text)
     return
     # output name should be same as input!
+    
     file = open("out.s", "W+")
     # Iterate through parse tree, using template
     generatedText = genText()
@@ -46,7 +48,7 @@ def eventHandler(node, direction, ctxText):
 '''
 Method: genText
 Parameters: None.
-Description: 
+Description: Generates the text of the assembly program.
 Returns: Program list as a string.
 '''
 
@@ -65,9 +67,9 @@ def genText():
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: mHandler
+Parameters: programList (list), lineNo (integer)
+Description: Handles the "M" nonterminal symbol in the grammar.
 Returns: lineNo as an integer.
 '''
 
@@ -93,9 +95,11 @@ def mHandler(programList, lineNo):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: addressCon
+Parameters: programList (list), lineNo (integer), const (number), destreg
+ (register)
+Description: Method used to write the template "t_address_con.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -118,9 +122,11 @@ def addressCon(programList, lineNo, const, destreg):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: addressVar
+Parameters: programList (list), lineNo (integer), var (string), destReg
+ (register)
+Description: Method used to write the template "t_address_var.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -142,9 +148,11 @@ def addressVar(programList, lineNo, var, destReg):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: addressVec
+Parameters: programList (list), lineNo (integer), argReg (register), destReg
+ (register)
+Description: Method used to write the template "t_address_vec.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -164,9 +172,10 @@ def addressVec(programList, lineNo, argReg, destReg):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: allocate
+Parameters: programList (list), lineNo (integer), num (number)
+Description: Method used for allocating local variables in a function, based
+ on the template "t_allocate.asm"
 Returns: lineNo as an integer.
 '''
 
@@ -189,9 +198,11 @@ def allocate(programList, lineNo, num):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: function
+Parameters: programList (list), lineNo (integer), name (string), funcNum
+ (integer)
+Description: Method used for writing a function definition, based on the
+ template "t_function.asm"
 Returns: lineNo as an integer.
 '''
 
@@ -279,9 +290,10 @@ def function(programList, lineNo, name, funcNum):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: genConst
+Parameters: programList (list), lineNo (integer), const (number)
+Description: Method used for allocating memory for a constant numerical value,
+ based on the template "t_gen_const.asm"
 Returns: lineNo as an integer.
 '''
 
@@ -302,9 +314,10 @@ def genConst(programList, lineNo, const):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: identEqFactor
+Parameters: programList (list), lineNo (integer)
+Description: Method used to write the template "t_ident_=_factor.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -332,9 +345,10 @@ def identEqFactor(programList, lineNo):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: identEqOpFactorFactor
+Parameters: programList (list), lineNo (integer), num (number)
+Description: Method used to write the template
+ "t_ident_=_op(factor,_factor).asm" to file, filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -366,9 +380,10 @@ def identEqOpFactorFactor(programList, lineNo, num):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: t_if
+Parameters: programList (list), lineNo (integer)
+Description: Method used to write the template "t_if.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -398,9 +413,10 @@ def t_if(programList, lineNo):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: t_sum
+Parameters: programList (list), lineNo (integer), num (number)
+Description: Method used to write the template "t_sum.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -436,9 +452,10 @@ def t_sum(programList, lineNo, num):
 
 
 '''
-Method: 
-Parameters: 
-Description: 
+Method: t_while
+Parameters: programList (list), lineNo (integer), num (number)
+Description: Method used to write the template "t_while.asm" to file,
+ filling in where necessary.
 Returns: lineNo as an integer.
 '''
 
@@ -465,7 +482,8 @@ def t_while(programList, lineNo, num):
     return lineNo
 
 '''
-BLAH
+Set-up code used to initalise ANTLR-related objects, as well as declare
+ global variables needed in multiple functions
 '''
 parseTree = []
 parseTreeIndex = 0
