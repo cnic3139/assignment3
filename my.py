@@ -40,7 +40,7 @@ def dispatcher(node, direct, ctx):
     if node == "start":
         start(direct, ctx)
     elif node == "m":
-        m()
+        m(direct, ctx)
     if node == "f":
         f(direct, ctx)
     if node == "p":
@@ -64,6 +64,7 @@ def dispatcher(node, direct, ctx):
 
 
 def enter(node, ctx):
+    # General pre-stuff goes here =============================================
     myList = []
     # This is where you will store your value
     # Try and get it from parent or make it yourself
@@ -77,18 +78,20 @@ def enter(node, ctx):
         myNum = getVal()
     myList.append(myNum)  # myList[0] is where value is located
     vals[myList[-1]] = None
+    # General pre-stuff goes here =============================================
 
-    # TODO ====================================================================
-    # So now we have our stuff filled, but our deps and formula will depend
-    #  on the particular node, so use the selector to defer to nodes
-    # TODO ====================================================================
-    mylist = selector(node, "enter", ctx, mylist)
+    # Node-specific stuff - use selector to defer to nodes ====================
+    myList = selector(node, "enter", ctx, myList)
+    # Node-specific stuff - use selector to defer to nodes ====================
 
+    # General post-stuff goes here ============================================
     # Store this list in nodes with ctx as key
     nodes[ctx] = myList
+    # General post-stuff goes here ============================================
 
 
 def exit(node, ctx):
+    # General pre-stuff goes here =============================================
     myData = nodes[ctx]
 
     myVal = myData[0]
@@ -96,8 +99,17 @@ def exit(node, ctx):
     myDeps = myData[1]
 
     myCalc = myData[2]
+    # General pre-stuff goes here =============================================
 
     # USE formula in myCalc with vars in myDeps to put val in myVal
+
+    # Node - specific stuff  - use selector to defer to nodes =================
+    myList = selector(node, "exit", ctx, myList)
+    # Node - specific stuff  - use selector to defer to nodes =================
+
+    # General post-stuff goes here ============================================
+    # TODO
+    # General post-stuff goes here ============================================
 
 
 def selector(node, direct, ctx, list):
@@ -124,7 +136,7 @@ def start(direct, ctx, list):
     elif direct == "exit":
         # THIS IS WHERE THE WHOLE PROGRAM IS GONNA BE BUILT?
         pass
-    return mylist
+    return myList
 
 
 def m(direct, ctx, list):
@@ -133,7 +145,7 @@ def m(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def f(direct, ctx, list):
@@ -142,7 +154,7 @@ def f(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def p(direct, ctx, list):
@@ -151,7 +163,7 @@ def p(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def l(direct, ctx, list):
@@ -160,7 +172,7 @@ def l(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def d(direct, ctx, list):
@@ -177,7 +189,7 @@ def s(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def r(direct, ctx, list):
@@ -186,14 +198,12 @@ def r(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def e(direct, ctx, list):
     myList = list
     if direct == "enter":
-        
-
         # This is where you will store your dependencies
         myList.append([])  # myList[1] is list of where dependencies are
         myList[-1].append(getVal())
@@ -201,8 +211,6 @@ def e(direct, ctx, list):
         myList[-1].append(getVal())
         vals[myList[-1][-1]] = None
         myList.append(lambda x, y: x + y)  # myList[2] is how to calc value
-
-        
 
     elif direct == "exit":
         # Lookup in node, get data from when you entered this node
@@ -213,8 +221,7 @@ def e(direct, ctx, list):
 
         # Now i have all my dependents set, i can write my stuff
 
-    return mylist
-
+    return myList
 
 
 def c(direct, ctx, list):
@@ -223,7 +230,7 @@ def c(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def ident(direct, ctx, list):
@@ -232,7 +239,7 @@ def ident(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
 
 
 def num(direct, ctx, list):
@@ -241,4 +248,4 @@ def num(direct, ctx, list):
         pass
     elif direct == "exit":
         pass
-    return mylist
+    return myList
