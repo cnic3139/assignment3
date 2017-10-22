@@ -4,20 +4,6 @@ from build.VPLLexer import VPLLexer
 from build.VPLParser import VPLParser
 import myListener
 
-char_stream = FileStream(sys.argv[1])
-lexer = VPLLexer(char_stream)
-tokens = CommonTokenStream(lexer)
-parser = VPLParser(tokens)
-root = parser.start()
-
-
-def tmp(one, two, three):
-    pass
-
-listener = myListener.myListener(tmp)
-walker = ParseTreeWalker()
-walker.walk(listener, root)
-
 nodes = {}
 vals = {}
 valCounter = 0
@@ -31,75 +17,7 @@ registers = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
 inP = False
 inD = False
 
-
-def getFileAsString(path):
-    file = open(path, "r")
-    string = file.read()
-    file.close()
-    return string
-
-
-def getVal():
-    global valCounter
-    returnVal = valCounter
-    valCounter += 1
-    return returnVal
-
-
-def getDependencies(num):
-    returnList = []
-    for i in range(num):
-        returnList.append(getVal())
-        vals[returnList[-1]] = None
-    return returnList
-
-
-def addPar(par):
-    if par not in pars:
-        pars.append(par)
-
-
-def addVar(var):
-    if var not in varis:
-        varis.append(var)
-
-
-def addConst(const):
-    if const not in consts:
-        consts.append(const)
-
-
-def dispatcher(node, direct, ctx):
-
-    if direct == "enter":
-        enter(node, ctx)
-    elif direct == "exit":
-        exit(node, ctx)
-
-    if node == "start":
-        start(direct, ctx)
-    elif node == "m":
-        m(direct, ctx)
-    if node == "f":
-        f(direct, ctx)
-    if node == "p":
-        p(direct, ctx)
-    if node == "l":
-        l(direct, ctx)
-    if node == "d":
-        d(direct, ctx)
-    if node == "s":
-        s(direct, ctx)
-    if node == "r":
-        r(direct, ctx)
-    if node == "e":
-        e(direct, ctx)
-    if node == "c":
-        c(direct, ctx)
-    if node == "ident":
-        ident(direct, ctx)
-    if node == "num":
-        num(direct, ctx)
+finalCode = None
 
 
 def enter(node, ctx):
@@ -110,6 +28,8 @@ def enter(node, ctx):
     myNum = None
     if ctx.parentCtx is not None:  # To deal with root node
         parentDeps = nodes[ctx.parentCtx][1]
+        print("type:", type(parentDeps))
+        print(nodes[ctx.parentCtx])
         for dep in parentDeps:
             if vals[dep] is None:
                 myNum = dep
@@ -133,15 +53,7 @@ def enter(node, ctx):
 def exit(node, ctx):
     # General pre-stuff goes here =============================================
     myData = nodes[ctx]
-
-    myVal = myData[0]
-
-    myDeps = myData[1]
-
-    myCalc = myData[2]
     # General pre-stuff goes here =============================================
-
-    # USE formula in myCalc with vars in myDeps to put val in myVal
 
     # Node - specific stuff  - use selector to defer to nodes =================
     myList = selector(node, "exit", ctx, myData)
@@ -152,25 +64,26 @@ def exit(node, ctx):
     # General post-stuff goes here ============================================
 
 
-def selector(node, direct, ctx, list):
+def selector(node, direct, ctx, pList):
     return {
-        "start": start(direct, ctx),
-        "m": m(direct, ctx),
-        "f": f(direct, ctx),
-        "p": p(direct, ctx),
-        "l": l(direct, ctx),
-        "d": d(direct, ctx),
-        "s": s(direct, ctx),
-        "r": r(direct, ctx),
-        "e": e(direct, ctx),
-        "c": c(direct, ctx),
-        "ident": ident(direct, ctx),
-        "num": num(direct, ctx),
+        "start": start(direct, ctx, pList),
+        "m": m(direct, ctx, pList),
+        "f": f(direct, ctx, pList),
+        "p": p(direct, ctx, pList),
+        "l": l(direct, ctx, pList),
+        "d": d(direct, ctx, pList),
+        "s": s(direct, ctx, pList),
+        "r": r(direct, ctx, pList),
+        "e": e(direct, ctx, pList),
+        "c": c(direct, ctx, pList),
+        "ident": ident(direct, ctx, pList),
+        "num": num(direct, ctx, pList),
     }[node]
 
 
-def start(direct, ctx, list):
-    myList = list
+def start(direct, ctx, pList):
+    print("at least here")
+    myList = pList
     if direct == "enter":
         # Reinitialise objects
         nodes = {}
@@ -179,39 +92,68 @@ def start(direct, ctx, list):
         varis = []
         consts = []
         addVar("__TEMP__")  # Special variable for calculations
-        pass
+        finalCode = None
     elif direct == "exit":
-        # THIS IS WHERE THE WHOLE PROGRAM IS GONNA BE BUILT?
-        pass
+        fileName = sys.argv[1].strip(".vpl")
+        file = open(fileName + ".s", "w")
+        file.write(finalCode)
+        file.close()
     return myList
 
 
-def m(direct, ctx, list):
-    myList = list
+def m(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
-        pass
+        myList.append(getDependencies(1))
+        myList.append("m")
     elif direct == "exit":
-        pass
+        dep = vals[myList[1][0]][0]
+        tem = vals[myList[1][0]][1]
+
+        template = tem
+
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
+
+        finalCode = template
+
     return myList
 
 
-def f(direct, ctx, list):
-    myList = list
+def allocate():
+    template = getFileAsString("t_allocate.asm")
+    template.replace("<NUM>", len(varis))
+    return template
+
+
+def f(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
-        pass
+        myList.append(getDependencies(1))  # Just S, P, D don't do code
+        myList.append("func")
     elif direct == "exit":
-        # Declare memory for vars and consts
+        # S has to return have a list in its return so we don't need to check
+        dep = vals[myList[1][0]][0]
+        tem = vals[myList[1][0]][1]
 
-        myData = nodes[ctx]
+        template = getFileAsString("t_function.asm")
+        template.replace("<name>", ctx.getText()[4:].split("(")[0])
+        template.replace("<allocate>", allocate())
+        template.replace("<insert>", tem)
 
-        if myData[2] == "":
-            pass
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
 
     return myList
 
 
-def p(direct, ctx, list):
-    myList = list
+def p(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         inP = True
         pass
@@ -221,8 +163,8 @@ def p(direct, ctx, list):
     return myList
 
 
-def l(direct, ctx, list):
-    myList = list
+def l(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         if inP:
             addPar(ctx.start.text)
@@ -233,8 +175,8 @@ def l(direct, ctx, list):
     return myList
 
 
-def d(direct, ctx, list):
-    myList = list
+def d(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         inD = True
         pass
@@ -243,8 +185,8 @@ def d(direct, ctx, list):
         pass
 
 
-def s(direct, ctx, list):
-    myList = list
+def s(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         # Need to find out which branch to follow
         # Because of Node R, there's an extra dependency for things
@@ -257,38 +199,101 @@ def s(direct, ctx, list):
             myList.append(getDependencies(3))
             myList.append("while")
         elif text in tmplist:
-            # Epsilon
+            # Epsilon (Actually R)
+            myList.append(getDependencies(1))
+            myList.append("epsilon")
             pass
         else:  # text == ident
             myList.append(getDependencies(3))
-            # myList.append()
+            myList.append("ident")
 
     elif direct == "exit":
         myData = nodes[ctx]
 
+        dep1 = None
+        dep2 = None
+        dep3 = None
+        tem1 = None
+        tem2 = None
+        tem3 = None
+
+        if vals[myData[1][0]] is list:
+            dep1 = vals[myData[1][0]][0]
+            tem1 = vals[myData[1][0]][1]
+        else:
+            dep1 = vals[myData[1][0]]
+
+        if len(myData[1]) >= 2:
+            if vals[myData[1][1]] is list:
+                dep2 = vals[myData[1][1]][0]
+                tem2 = vals[myData[1][1]][1]
+            else:
+                dep2 = vals[myData[1][1]]
+
+        if len(myData[1]) >= 3:
+            if vals[myData[1][2]] is list:
+                dep3 = vals[myData[1][2]][0]
+                tem3 = vals[myData[1][2]][1]
+            else:
+                dep3 = vals[myData[1][2]]
+
         # WHILE AND IF NEED TO REPLACE <TRUE> AND <FALSE> IN C TEMPLATE
+        # C will be the first dependency in both IF and WHILE
+
+        num = getVal()
 
         if myData[2] == "if":
-            template = getFileAsString("t_if.asm")
-            template.replace("<template>", "")
-            template.replace("<NUM>", "")
+            tem1.replace("<true>", ".true-branch<NUM>")
+            tem1.replace("<false>", ".false-branch<NUM>")
 
+            template = getFileAsString("t_if.asm")
+            template.replace("<template>", tem1)
+            template.replace("<NUM>", str(num))
+            template.replace("<true-branch>", tem2)
         elif myData[2] == "while":
+            tem1.replace("<true>", ".loopbegin<NUM>")
+            tem1.replace("<false>", ".loopend<NUM>")
+
             template = getFileAsString("t_while.asm")
-            template.replace("<template>", "")
-            template.replace("<NUM>", "")
-            template.replace("<loop-body>")
-        elif myData[2] == "s":
-            pass
+            template.replace("<template>", tem1)
+            template.replace("<NUM>", str(num))
+            template.replace("<loop-body>", tem2)
+        elif myData[2] == "epsilon":
+            template = tem1
         elif myData[2] == "ident":
-            template = getFileAsString("")
-        elif myData[2] == "ep":
-            pass  # Do we actually do nothing in this instance?
+            template = getFileAsString("t_ident_=_factor.asm")
+            template.replace("<load-rax>", load("__TEMP__", "rax"))
+            template.replace("<load-r10>", load("dep1", "r10"))
+            template.replace("<X>", str(num))
+
+        # Concaternate templates
+        # tem3 = R template if it exists
+        # tem2 = loop body template if it exists
+        # tem1 = IDENT or condition template
+        # So tem3 should come last
+        # tem2 and tem1 shouldnt go anywhere if they were in IF or WHILE
+        if myData[2] == "if" or myData[2] == "while":
+            if tem3 is not None:
+                template = template + tem3
+        if myData[2] == "ident":
+            if tem3 is not None:
+                template = template + tem3
+            if tem2 is not None:
+                template = tem2 + template
+
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myData[0]]
+        vals[myData[0]] = []
+        vals[myData[0]].append(tempVal)
+        vals[myData[0]].append(template)
+
+        myList = myData
+
     return myList
 
 
-def r(direct, ctx, list):
-    myList = list
+def r(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         myList.append(getDependencies(1))
         myList.append("s")
@@ -331,8 +336,8 @@ def load(value, register):
         return template
 
 
-def e(direct, ctx, list):
-    myList = list
+def e(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
 
         # Need to find out which branch to follow
@@ -380,7 +385,7 @@ def e(direct, ctx, list):
         else:
             dep1 = vals[myData[1][0]]
 
-        if len(myData[1]) == 2:
+        if len(myData[1]) >= 2:
             if vals[myData[1][1]] is list:
                 dep2 = vals[myData[1][1]][0]
                 tem2 = vals[myData[1][1]][1]
@@ -422,18 +427,18 @@ def e(direct, ctx, list):
             template = tem1 + template
 
         # Change list[0] to list, 0 = depVal, 1 = assembly template
-        tempVal = myData.pop(0)
-        myData.insert(0, [])
-        myData[0].append(tempVal)
-        myData[0].append(template)
+        tempVal = vals[myData[0]]
+        vals[myData[0]] = []
+        vals[myData[0]].append(tempVal)
+        vals[myData[0]].append(template)
 
         myList = myData
 
     return myList
 
 
-def c(direct, ctx, list):
-    myList = list
+def c(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         myList.append(getDependencies(2))
         if "<" in ctx.getText():
@@ -463,16 +468,16 @@ def c(direct, ctx, list):
             template = tem + template
 
         # Change list[0] to list, 0 = depVal, 1 = assembly template
-        tempVal = myList.pop(0)
-        myList.insert(0, [])
-        myList[0].append(tempVal)
-        myList[0].append(template)
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
 
     return myList
 
 
-def ident(direct, ctx, list):
-    myList = list
+def ident(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         myList.append(getDependencies(0))
         myList.append(ctx.start.text)
@@ -483,8 +488,8 @@ def ident(direct, ctx, list):
     return myList
 
 
-def num(direct, ctx, list):
-    myList = list
+def num(direct, ctx, pList):
+    myList = pList
     if direct == "enter":
         myList.append(getDependencies(0))
         myList.append(ctx.start.text)
@@ -493,3 +498,58 @@ def num(direct, ctx, list):
         if myList[2] in consts:
             vals[myList[0]] = myList[2]
     return myList
+
+
+def getFileAsString(path):
+    file = open(path, "r")
+    string = file.read()
+    file.close()
+    return string
+
+
+def getVal():
+    global valCounter
+    returnVal = valCounter
+    valCounter += 1
+    return returnVal
+
+
+def getDependencies(num):
+    returnList = []
+    for i in range(num):
+        returnList.append(getVal())
+        vals[returnList[-1]] = None
+    return returnList
+
+
+def addPar(par):
+    if par not in pars:
+        pars.append(par)
+
+
+def addVar(var):
+    if var not in varis:
+        varis.append(var)
+
+
+def addConst(const):
+    if const not in consts:
+        consts.append(const)
+
+
+def dispatcher(node, direct, ctx):
+
+    if direct == "enter":
+        enter(node, ctx)
+    elif direct == "exit":
+        exit(node, ctx)
+
+char_stream = FileStream(sys.argv[1])
+lexer = VPLLexer(char_stream)
+tokens = CommonTokenStream(lexer)
+parser = VPLParser(tokens)
+root = parser.start()
+
+listener = myListener.myListener(dispatcher)
+walker = ParseTreeWalker()
+walker.walk(listener, root)
