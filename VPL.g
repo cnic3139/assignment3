@@ -23,10 +23,10 @@ d : 'var' l ';'
 s : 'if' c 'then' s 'endif' r
   | 'while' c 'do' s 'endwhile' r
   | ident '=' e r
-  | r
+  | /* epsilon */
   ;
 
-r : ';' s
+r : ';' s r
   | /* epsilon */
   ;
 
