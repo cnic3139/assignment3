@@ -247,15 +247,21 @@ def s(direct, ctx, list):
     myList = list
     if direct == "enter":
         # Need to find out which branch to follow
+        # Because of Node R, there's an extra dependency for things
         text = ctx.start.text
+        tmplist = ["", "endif", "endwhile", "end", ";"]
         if text == "if":
-            myList.append(getDependencies(2))
+            myList.append(getDependencies(3))
             myList.append("if")
         elif text == "while":
-            myList.append(getDependencies(2))
+            myList.append(getDependencies(3))
             myList.append("while")
-        else:  # text == ident
+        elif text in tmplist:
+            # Epsilon
             pass
+        else:  # text == ident
+            myList.append(getDependencies(3))
+            # myList.append()
 
     elif direct == "exit":
         myData = nodes[ctx]

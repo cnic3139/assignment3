@@ -23,7 +23,7 @@ d : 'var' l ';'
 s : 'if' c 'then' s 'endif' r
   | 'while' c 'do' s 'endwhile' r
   | ident '=' e r
-  | /* epsilon */
+  | r
   ;
 
 r : ';' s r
