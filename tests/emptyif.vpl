@@ -1,0 +1,4 @@
+func emptyif (a)
+	if a < 10 
+	endif
+end

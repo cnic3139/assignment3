@@ -1,0 +1,14 @@
+func everything (a, b, c)
+	var x, y, z;
+	x = 1.2;
+	y = x;
+	z = mult(x, y);
+
+	if min(a, b) >= z then
+
+		while c < 5 do
+			minus(div(a, x), c)
+		endwhile
+
+	endif
+end

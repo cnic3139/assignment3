@@ -1,0 +1,9 @@
+func biggerorsmaller (a, b, c) 
+	if a < 10 then
+		c = add(a, b)
+	endif
+
+	if a >= 10 then
+		c = minus(a, b)
+	endif
+end
