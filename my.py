@@ -148,7 +148,7 @@ def exit(node, ctx):
     # Node - specific stuff  - use selector to defer to nodes =================
 
     # General post-stuff goes here ============================================
-    # TODO
+    nodes[ctx] = myList
     # General post-stuff goes here ============================================
 
 
@@ -350,30 +350,43 @@ def e(direct, ctx, list):
         # Lookup in node, get data from when you entered this node
         myData = nodes[ctx]
 
+        # STILL NEED TO CHECK IF DEPENDENTS HAVE CODE SNIPPETS
+
         template = None
         if myData[2] == "op":
             template = getFileAsString("t_ident_=_op(factor,_factor).asm")
             template.replace("<load-source1-rax>", load(myData[1][0], "rax"))
             template.replace("<load-source2-r10>", load(myData[1][1], "r10"))
-            template.replace("<load-dest-r11>", load())  # Wait until S???
+            template.replace("<load-dest-r11>", load("__TEMP__", "r11"))
             template.replace("<operation>", getOp(ctx))
             template.replace("<X>", str(getVal()))
+
+            # If const, need to remove lines in template
+            if vals[myData[1][0]].isnumeric():
+                template.replace("addq   $16,    " + "%" + "rax", "")
+
+            if vals[myData[1][1]].isnumeric():
+                template.replace("addq   $16,    " + "%" + "r10", "")
+
         elif myData[2] == "e":
             pass  # I dunno what to do here, just give all its stuff to parent?
-        elif myData[2] == "num":
+        elif myData[2] == "num" or myData[2] == "ident":
             template = getFileAsString("t_ident_=_factor.asm")
-            template.replace("<load-rax>", "")
-            template.replace("<load-r10>", "")  # Wait until S???
-            template.replace("<X>", "")
-        elif myData[2] == "ident":
-            template = getFileAsString("t_ident_=_factor.asm")
-            template.replace("<load-rax>", "")
-            template.replace("<load-r10>", "")  # Wait until S???
+            template.replace("<load-rax>", load(myData[1][0], "rax"))
+            template.replace("<load-r10>", load("__TEMP__", "r10"))
             template.replace("<X>", str(getVal()))
 
-        # Put assembly template as last element in list for access by parents
-        myData.pop()
-        myData.append(template)
+            # If const, need to remove lines in template
+            if myData == "num":
+                template.replace("addq   $16,    " + "%" + "rax", "")
+
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = myData.pop(0)
+        myData.insert(0, [])
+        myData[0].append(tempVal)
+        myData[0].append(template)
+
+        myList = myData
 
     return myList
 
