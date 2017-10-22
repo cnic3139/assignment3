@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 from antlr4 import *
 from build.VPLLexer import VPLLexer
@@ -26,10 +27,13 @@ def enter(node, ctx):
     # This is where you will store your value
     # Try and get it from parent or make it yourself
     myNum = None
+    if inP or inD:
+        return
+    print(inP, inD)
     if ctx.parentCtx is not None:  # To deal with root node
+        if len(nodes[ctx.parentCtx]) == 1:
+            return
         parentDeps = nodes[ctx.parentCtx][1]
-        print("type:", type(parentDeps))
-        print(nodes[ctx.parentCtx])
         for dep in parentDeps:
             if vals[dep] is None:
                 myNum = dep
@@ -52,6 +56,8 @@ def enter(node, ctx):
 
 def exit(node, ctx):
     # General pre-stuff goes here =============================================
+    if ctx not in nodes.keys():
+        return
     myData = nodes[ctx]
     # General pre-stuff goes here =============================================
 
@@ -65,24 +71,34 @@ def exit(node, ctx):
 
 
 def selector(node, direct, ctx, pList):
-    return {
-        "start": start(direct, ctx, pList),
-        "m": m(direct, ctx, pList),
-        "f": f(direct, ctx, pList),
-        "p": p(direct, ctx, pList),
-        "l": l(direct, ctx, pList),
-        "d": d(direct, ctx, pList),
-        "s": s(direct, ctx, pList),
-        "r": r(direct, ctx, pList),
-        "e": e(direct, ctx, pList),
-        "c": c(direct, ctx, pList),
-        "ident": ident(direct, ctx, pList),
-        "num": num(direct, ctx, pList),
-    }[node]
+    if node == "start":
+        return start(direct, ctx, pList)
+    elif node == "m":
+        return m(direct, ctx, pList)
+    elif node == "f":
+        return f(direct, ctx, pList)
+    elif node == "p":
+        return p(direct, ctx, pList)
+    elif node == "l":
+        return l(direct, ctx, pList)
+    elif node == "d":
+        return d(direct, ctx, pList)
+    elif node == "s":
+        return s(direct, ctx, pList)
+    elif node == "r":
+        return r(direct, ctx, pList)
+    elif node == "e":
+        return e(direct, ctx, pList)
+    elif node == "c":
+        return c(direct, ctx, pList)
+    elif node == "ident":
+        return ident(direct, ctx, pList)
+    elif node == "num":
+        return num(direct, ctx, pList)
 
 
 def start(direct, ctx, pList):
-    print("at least here")
+    global finalCode
     myList = pList
     if direct == "enter":
         # Reinitialise objects
@@ -93,6 +109,8 @@ def start(direct, ctx, pList):
         consts = []
         addVar("__TEMP__")  # Special variable for calculations
         finalCode = None
+        myList.append(getDependencies(1))
+        myList.append("start")
     elif direct == "exit":
         fileName = sys.argv[1].strip(".vpl")
         file = open(fileName + ".s", "w")
@@ -102,6 +120,7 @@ def start(direct, ctx, pList):
 
 
 def m(direct, ctx, pList):
+    global finalCode
     myList = pList
     if direct == "enter":
         myList.append(getDependencies(1))
@@ -118,12 +137,13 @@ def m(direct, ctx, pList):
         vals[myList[0]].append(template)
 
         finalCode = template
+        print(finalCode)
 
     return myList
 
 
 def allocate():
-    template = getFileAsString("t_allocate.asm")
+    template = getFileAsString("templates/t_allocate.asm")
     template.replace("<NUM>", len(varis))
     return template
 
@@ -138,7 +158,7 @@ def f(direct, ctx, pList):
         dep = vals[myList[1][0]][0]
         tem = vals[myList[1][0]][1]
 
-        template = getFileAsString("t_function.asm")
+        template = getFileAsString("templates/t_function.asm")
         template.replace("<name>", ctx.getText()[4:].split("(")[0])
         template.replace("<allocate>", allocate())
         template.replace("<insert>", tem)
@@ -153,6 +173,7 @@ def f(direct, ctx, pList):
 
 
 def p(direct, ctx, pList):
+    global inP
     myList = pList
     if direct == "enter":
         inP = True
@@ -164,6 +185,8 @@ def p(direct, ctx, pList):
 
 
 def l(direct, ctx, pList):
+    global inP
+    global inD
     myList = pList
     if direct == "enter":
         if inP:
@@ -176,6 +199,7 @@ def l(direct, ctx, pList):
 
 
 def d(direct, ctx, pList):
+    global inD
     myList = pList
     if direct == "enter":
         inD = True
@@ -246,7 +270,7 @@ def s(direct, ctx, pList):
             tem1.replace("<true>", ".true-branch<NUM>")
             tem1.replace("<false>", ".false-branch<NUM>")
 
-            template = getFileAsString("t_if.asm")
+            template = getFileAsString("templates/t_if.asm")
             template.replace("<template>", tem1)
             template.replace("<NUM>", str(num))
             template.replace("<true-branch>", tem2)
@@ -254,14 +278,14 @@ def s(direct, ctx, pList):
             tem1.replace("<true>", ".loopbegin<NUM>")
             tem1.replace("<false>", ".loopend<NUM>")
 
-            template = getFileAsString("t_while.asm")
+            template = getFileAsString("templates/t_while.asm")
             template.replace("<template>", tem1)
             template.replace("<NUM>", str(num))
             template.replace("<loop-body>", tem2)
         elif myData[2] == "epsilon":
             template = tem1
         elif myData[2] == "ident":
-            template = getFileAsString("t_ident_=_factor.asm")
+            template = getFileAsString("templates/t_ident_=_factor.asm")
             template.replace("<load-rax>", load("__TEMP__", "rax"))
             template.replace("<load-r10>", load("dep1", "r10"))
             template.replace("<X>", str(num))
@@ -319,19 +343,19 @@ def getOp(ctx):
 def load(value, register):
     # Need to inspect value to decide which template to use
     if value.isnumeric():  # Constant
-        template = getFileAsString("t_address_con.asm")
+        template = getFileAsString("templates/t_address_con.asm")
         template.replace("<X>", value)
         template.replace("<destreg>", "%" + register)
         return template
     elif value in varis:  # Variable
-        template = getFileAsString("t_address_var.asm")
-        template.replace("<N>", str(varis.indexOf(value) + 1))
+        template = getFileAsString("templates/t_address_var.asm")
+        template.replace("<N>", str(varis.index(value) + 1))
         template.replace("<destreg>", "%" + register)
         return template
     elif value in pars:  # Parameter
-        template = getFileAsString("t_address_vec.asm")
+        template = getFileAsString("templates/t_address_vec.asm")
         template.replace("<argreg-N+1>",
-                         "%" + registers[pars.indexOf(value) + 1])
+                         "%" + registers[pars.index(value) + 1])
         template.replace("<destreg>", "%" + register)
         return template
 
@@ -372,7 +396,8 @@ def e(direct, ctx, pList):
     elif direct == "exit":
         # Lookup in node, get data from when you entered this node
         myData = nodes[ctx]
-
+        print("==============", myData[0])
+        print("--------------", vals[myData[0]])
         # STILL NEED TO CHECK IF DEPENDENTS HAVE CODE SNIPPETS
         dep1 = None
         dep2 = None
@@ -394,7 +419,7 @@ def e(direct, ctx, pList):
 
         template = None
         if myData[2] == "op":
-            template = getFileAsString("t_ident_=_op(factor,_factor).asm")
+            template = getFileAsString("templates/t_ident_=_op(factor,_factor).asm")
             template.replace("<load-source1-rax>", load(dep1, "rax"))
             template.replace("<load-source2-r10>", load(dep2, "r10"))
             template.replace("<load-dest-r11>", load("__TEMP__", "r11"))
@@ -409,9 +434,10 @@ def e(direct, ctx, pList):
                 template.replace("addq   $16,    " + "%" + "r10", "")
 
         elif myData[2] == "e":
+            
             pass  # I dunno what to do here, just give all its stuff to parent?
         elif myData[2] == "num" or myData[2] == "ident":
-            template = getFileAsString("t_ident_=_factor.asm")
+            template = getFileAsString("templates/t_ident_=_factor.asm")
             template.replace("<load-rax>", load(dep1, "rax"))
             template.replace("<load-r10>", load("__TEMP__", "r10"))
             template.replace("<X>", str(getVal()))
@@ -428,6 +454,7 @@ def e(direct, ctx, pList):
 
         # Change list[0] to list, 0 = depVal, 1 = assembly template
         tempVal = vals[myData[0]]
+        print("TEMPVAL", tempVal)
         vals[myData[0]] = []
         vals[myData[0]].append(tempVal)
         vals[myData[0]].append(template)
@@ -449,15 +476,19 @@ def c(direct, ctx, pList):
 
         dep = None
         tem = None
-
-        if vals[myList[1][0]] is list:
+        print("here!", vals[myList[1][0]])
+        if isinstance(vals[myList[1][0]], list):
+            print("this")
             dep = vals[myList[1][0]][0]
             tem = vals[myList[1][0]][1]
         else:
+            print("that")
             dep = vals[myList[1][0]]
-
-        template = getFileAsString("t_sum.asm")
-        template.replace("<load-source-rax>", load(dep, "rax"))
+            print(type(dep))
+            print(vals[myList[1][0]] is list)
+        print("dep", dep)
+        template = getFileAsString("templates/t_sum.asm")
+        template.replace("<load-source-rax>", load("__TEMP__", "rax"))
         template.replace("<X>", str(getVal()))
         template.replace("<NUMBER>", vals[myList[1][1]])
         if dep.isnumeric():
