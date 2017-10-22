@@ -277,6 +277,8 @@ def s(direct, ctx, pList):
 
         num = getVal()
 
+        template = None
+        print("QWERTY", myData[2])
         if myData[2] == "if":
             tem1.replace("<true>", ".true-branch<NUM>")
             tem1.replace("<false>", ".false-branch<NUM>")
@@ -321,6 +323,7 @@ def s(direct, ctx, pList):
         vals[myData[0]] = []
         vals[myData[0]].append(tempVal)
         vals[myData[0]].append(template)
+        print("TEMPLATE", template)
 
         myList = myData
 
