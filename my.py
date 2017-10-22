@@ -40,6 +40,7 @@ def enter(node, ctx):
                 break
     if myNum is None:
         myNum = getVal()
+    print(node, myNum)
     myList.append(myNum)  # myList[0] is where value is located
     vals[myList[-1]] = None  # Initialise with 'None' value
     # General pre-stuff goes here =============================================
@@ -137,6 +138,9 @@ def m(direct, ctx, pList):
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
 
+        if vals[mylist[0]][0] is None:
+            vals[myList[0]][0] = "none"
+
         finalCode = template
         print(finalCode)
 
@@ -145,30 +149,36 @@ def m(direct, ctx, pList):
 
 def allocate():
     template = getFileAsString("templates/t_allocate.asm")
-    template.replace("<NUM>", len(varis))
+    template.replace("<NUM>", str(len(varis)))
     return template
 
 
 def f(direct, ctx, pList):
     myList = pList
     if direct == "enter":
-        myList.append(getDependencies(1))  # Just S, P, D don't do code
+        myList.append(getDependencies(2))  # Just ident and S, P, D don't do code
         myList.append("func")
     elif direct == "exit":
         # S has to return have a list in its return so we don't need to check
-        dep = vals[myList[1][0]][0]
-        tem = vals[myList[1][0]][1]
+        dep1 = vals[myList[1][0]]
+        print("mylist", myList)
+        print("vals", vals[myList[1][1]])
+        dep2 = vals[myList[1][1]][0]
+        tem2 = vals[myList[1][1]][1]
 
         template = getFileAsString("templates/t_function.asm")
         template.replace("<name>", ctx.getText()[4:].split("(")[0])
         template.replace("<allocate>", allocate())
-        template.replace("<insert>", tem)
+        template.replace("<insert>", tem2)
 
         # Change list[0] to list, 0 = depVal, 1 = assembly template
         tempVal = vals[myList[0]]
         vals[myList[0]] = []
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
+
+    if vals[myList[0]][0] is None:
+        vals[myList[0]][0] = "none"
 
     return myList
 
@@ -314,6 +324,9 @@ def s(direct, ctx, pList):
 
         myList = myData
 
+    if vals[mylist[0]][0] is None:
+        vals[myList[0]][0] = "none"
+
     return myList
 
 
@@ -435,7 +448,6 @@ def e(direct, ctx, pList):
                 template.replace("addq   $16,    " + "%" + "r10", "")
 
         elif myData[2] == "e":
-            
             pass  # I dunno what to do here, just give all its stuff to parent?
         elif myData[2] == "num" or myData[2] == "ident":
             template = getFileAsString("templates/t_ident_=_factor.asm")
@@ -461,6 +473,9 @@ def e(direct, ctx, pList):
         vals[myData[0]].append(template)
 
         myList = myData
+
+    if vals[mylist[0]][0] is None:
+        vals[myList[0]][0] = "none"
 
     return myList
 
@@ -504,6 +519,9 @@ def c(direct, ctx, pList):
         vals[myList[0]] = []
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
+
+    if vals[mylist[0]][0] is None:
+        vals[myList[0]][0] = "none"
 
     return myList
 
