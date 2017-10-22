@@ -113,6 +113,7 @@ def start(direct, ctx, pList):
         myList.append("start")
     elif direct == "exit":
         fileName = sys.argv[1].strip(".vpl")
+        print("*******************************************FILENAME:", filename)
         file = open(fileName + ".s", "w")
         file.write(finalCode)
         file.close()
