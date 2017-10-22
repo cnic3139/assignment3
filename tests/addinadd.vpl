@@ -1,0 +1,3 @@
+func addinadd (a, b, c, d)
+	d = add(add(a, b), add(b, c))
+end

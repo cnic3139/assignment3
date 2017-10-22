@@ -1,0 +1,3 @@
+func brackets (a, b)
+	b = ((add(a, (a))))
+end

@@ -1,0 +1,3 @@
+func quadruple (a, b)
+	b = mult(a, 4)
+end

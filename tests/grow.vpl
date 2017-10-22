@@ -1,0 +1,9 @@
+func grow (a, b)
+	var i;
+	i = 0;
+	while i < 10 do
+		a = add(a, b);
+		b = mult(b, 1.5);
+		i = add(i, 1)
+	endwhile
+end

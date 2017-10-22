@@ -1,0 +1,17 @@
+func biggerorsmaller (a, b, c, d) 
+	if a < 10 then
+		c = add(a, b)
+	endif
+
+	if a >= 10 then
+		c = minus(a, b)
+	endif
+end
+
+func clone (a, b)
+	b = a
+end
+
+func addinadd (a, b, c, d)
+	d = add(add(a, b), add(b, c))
+end

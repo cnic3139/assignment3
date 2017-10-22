@@ -1,0 +1,4 @@
+func ABCand123 (a)
+	var Cam3r0n;
+	Cam3r0n = mult(a, 0)
+end

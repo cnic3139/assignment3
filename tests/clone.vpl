@@ -1,0 +1,3 @@
+func clone (a, b)
+	b = a
+end

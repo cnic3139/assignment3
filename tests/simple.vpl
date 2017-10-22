@@ -1,0 +1,4 @@
+func simple (a, b, c)
+	c = add(a, b);
+	c = minus(c, 1)
+end
