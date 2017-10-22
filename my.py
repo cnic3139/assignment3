@@ -177,8 +177,8 @@ def f(direct, ctx, pList):
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
 
-    if vals[myList[0]][0] is None:
-        vals[myList[0]][0] = "none"
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
 
     return myList
 
@@ -324,8 +324,8 @@ def s(direct, ctx, pList):
 
         myList = myData
 
-    if vals[mylist[0]][0] is None:
-        vals[myList[0]][0] = "none"
+        if vals[mylist[0]][0] is None:
+            vals[myList[0]][0] = "none"
 
     return myList
 
@@ -474,8 +474,8 @@ def e(direct, ctx, pList):
 
         myList = myData
 
-    if vals[mylist[0]][0] is None:
-        vals[myList[0]][0] = "none"
+        if vals[mylist[0]][0] is None:
+            vals[myList[0]][0] = "none"
 
     return myList
 
@@ -520,8 +520,8 @@ def c(direct, ctx, pList):
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
 
-    if vals[mylist[0]][0] is None:
-        vals[myList[0]][0] = "none"
+        if vals[mylist[0]][0] is None:
+            vals[myList[0]][0] = "none"
 
     return myList
 
