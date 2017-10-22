@@ -324,7 +324,7 @@ def s(direct, ctx, pList):
 
         myList = myData
 
-        if vals[mylist[0]][0] is None:
+        if vals[myList[0]][0] is None:
             vals[myList[0]][0] = "none"
 
     return myList
@@ -474,7 +474,7 @@ def e(direct, ctx, pList):
 
         myList = myData
 
-        if vals[mylist[0]][0] is None:
+        if vals[myList[0]][0] is None:
             vals[myList[0]][0] = "none"
 
     return myList
@@ -520,7 +520,7 @@ def c(direct, ctx, pList):
         vals[myList[0]].append(tempVal)
         vals[myList[0]].append(template)
 
-        if vals[mylist[0]][0] is None:
+        if vals[myList[0]][0] is None:
             vals[myList[0]][0] = "none"
 
     return myList
