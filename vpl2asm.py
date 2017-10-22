@@ -5,559 +5,599 @@ from build.VPLLexer import VPLLexer
 from build.VPLParser import VPLParser
 import myListener
 
+nodes = {}
+vals = {}
+valCounter = 0
 
-'''
-Method: main
-Parameters: none
-Description: Main method, first function to be executed after code outside
- methods.
-Returns: No value returned.
-'''
+pars = []
+varis = []
+consts = []
 
+registers = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
 
-def main():
-    for token in tokens.tokens:
-        print("token: ", token.text)
-    # output name should be same as input!
+inP = False
+inD = False
 
-    print("\ngentext len\n")
-    file = open("out.s", "w")
-
-    # Iterate through parse tree, using template
-    generatedText = genText()
-    print("\ngentext len\n", len(generatedText))
-    for line in generatedText:
-        file.write(line)
-        file.write("hello")
-    file.close()
+finalCode = None
 
 
-'''
-Method: eventHandler
-Parameters: node (String), direction (String), ctsText (String)
-Description: This method is called by methods of the "myListener" class to
- create a list (parseTree) representing the parse tree of the input VPL
- program.
-Returns: No value returned.
-'''
+def enter(node, ctx):
+    # General pre-stuff goes here =============================================
+    myList = []
+    # This is where you will store your value
+    # Try and get it from parent or make it yourself
+    myNum = None
+    if inP or inD:
+        selector(node, "enter", ctx, myList)
+        return
+    if ctx.parentCtx is not None:  # To deal with root node
+        if len(nodes[ctx.parentCtx]) == 1:
+            return
+        parentDeps = nodes[ctx.parentCtx][1]
+        for dep in parentDeps:
+            if vals[dep] is None:
+                myNum = dep
+                break
+    if myNum is None:
+        myNum = getVal()
+    myList.append(myNum)  # myList[0] is where value is located
+    vals[myList[-1]] = None  # Initialise with 'None' value
+    # General pre-stuff goes here =============================================
+
+    # Node-specific stuff - use selector to defer to nodes ====================
+    myList = selector(node, "enter", ctx, myList)
+    # Node-specific stuff - use selector to defer to nodes ====================
+
+    # General post-stuff goes here ============================================
+    # Store this list in nodes with ctx as key
+    nodes[ctx] = myList
+    # General post-stuff goes here ============================================
 
 
-def eventHandler(node, direction, ctxText):
-    # Listen for things here!
-    parseTree.append((node, direction))
-    ctxTree.append(ctxText)
+def exit(node, ctx):
+    # General pre-stuff goes here =============================================
+    if ctx not in nodes.keys():
+        return
+    myData = nodes[ctx]
+    # General pre-stuff goes here =============================================
+
+    # Node - specific stuff  - use selector to defer to nodes =================
+    myList = selector(node, "exit", ctx, myData)
+    # Node - specific stuff  - use selector to defer to nodes =================
+
+    # General post-stuff goes here ============================================
+    nodes[ctx] = myList
+    # General post-stuff goes here ============================================
 
 
-'''
-Method: genText
-Parameters: None.
-Description: Generates the text of the assembly program.
-Returns: Program list as a string.
-'''
+def selector(node, direct, ctx, pList):
+    if node == "start":
+        return start(direct, ctx, pList)
+    elif node == "m":
+        return m(direct, ctx, pList)
+    elif node == "f":
+        return f(direct, ctx, pList)
+    elif node == "p":
+        return p(direct, ctx, pList)
+    elif node == "l":
+        return l(direct, ctx, pList)
+    elif node == "d":
+        return d(direct, ctx, pList)
+    elif node == "s":
+        return s(direct, ctx, pList)
+    elif node == "r":
+        return r(direct, ctx, pList)
+    elif node == "e":
+        return e(direct, ctx, pList)
+    elif node == "c":
+        return c(direct, ctx, pList)
+    elif node == "ident":
+        return ident(direct, ctx, pList)
+    elif node == "num":
+        return num(direct, ctx, pList)
 
 
-def genText():
-    global parseTreeIndex
-    programList = []  # list of lines for program
-    # Ensure first index in parseTree is start symb
-    if parseTree[parseTreeIndex] != ("start", "enter"):
-        print("System exit genText")
-        sys.exit(1)
-    parseTreeIndex += 1
-
-    lineNo = 0
-    print("Error mHandler")
-    lineNo = mHandler(programList, lineNo)
-    print("Error mHandler2")
-
-    return "\n".join(programList)
-
-
-'''
-Method: mHandler
-Parameters: programList (list), lineNo (integer)
-Description: Handles the "M" nonterminal symbol in the grammar.
-Returns: lineNo as an integer.
-'''
+def start(direct, ctx, pList):
+    global finalCode
+    myList = pList
+    if direct == "enter":
+        # Reinitialise objects
+        nodes = {}
+        vals = {}
+        pars = []
+        varis = []
+        consts = []
+        addVar("__TEMP__")  # Special variable for calculations
+        finalCode = None
+        myList.append(getDependencies(1))
+        myList.append("start")
+    elif direct == "exit":
+        fileName = sys.argv[1]
+        file = open(fileName + ".s", "w")
+        file.write(finalCode)
+        file.close()
+    return myList
 
 
-def mHandler(programList, lineNo):
-    global parseTreeIndex, tokensIndex
-    funcNum = 0
-    while True:
-        print("parse pair", parseTree[parseTreeIndex], parseTreeIndex)
-
-        # if parseTree[parseTreeIndex] != ("m", "enter"):
-        #     print("System Exit mHandler")
-        #     sys.exit(1)
-        parseTreeIndex += 1
-
-        if parseTree[parseTreeIndex] == ("m", "exit"):
-            parseTreeIndex += 1
-            break  # Out of infinite loop
+def m(direct, ctx, pList):
+    global finalCode
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(1))
+        myList.append("m")
+    elif direct == "exit":
+        if vals[myList[1][0]] is None:
+            # Epsilon
+            tem = ""
         else:
-            print(tokensIndex)
-            print(tokens.tokens[tokensIndex].text)
-            while tokensIndex < len(tokens.tokens):
-                print("tokenI: {0}, token: {1}".format(tokensIndex, tokens.tokens[tokensIndex].text))
-                if tokens.tokens[tokensIndex].text != "func":
-                    tokensIndex += 1
-                else:
-                    tokensIndex += 1
-                    name = tokens.tokens[tokensIndex].text
-                    print("mHandler Function Call")
-                    lineNo = function(programList, lineNo, name, funcNum)
-                    funcNum += 1
-    return lineNo
+            dep = vals[myList[1][0]][0]
+            tem = vals[myList[1][0]][1]
+
+        template = tem
+
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
+
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
+
+        finalCode = template
+
+    return myList
 
 
-'''
-Method: addressCon
-Parameters: programList (list), lineNo (integer), const (number), destreg
- (register)
-Description: Method used to write the template "t_address_con.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def allocate():
+    template = getFileAsString("templates/t_allocate.asm")
+    template = template.replace("<NUM>", str(len(varis)))
+    return template
 
 
-def addressCon(programList, lineNo, const, destreg):
-    template = open("templates/t_address_con.asm", "r")
+def f(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(2))  # Just ident and S, P, D don't do code
+        myList.append("func")
+    elif direct == "exit":
+        # S has to return have a list in its return so we don't need to check
+        dep1 = vals[myList[1][0]]
+        dep2 = vals[myList[1][1]][0]
+        tem2 = vals[myList[1][1]][1]
+        if tem2 is None:
+            tem2 = ""
 
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<X>":
-                tempLine.append(const)
-            elif word == "$.const<X>,":
-                tempLine.append("$.const" + const + ",")
-            elif word == "<destreg>":
-                tempLine.append(destreg)
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo  # Lists pass by reference, ints by value
+        template = getFileAsString("templates/t_function.asm")
+        template = template.replace("<name>", ctx.getText()[4:].split("(")[0])
+        template = template.replace("<allocate>", allocate())
+        template = template.replace("<insert>", tem2)
 
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
 
-'''
-Method: addressVar
-Parameters: programList (list), lineNo (integer), var (string), destReg
- (register)
-Description: Method used to write the template "t_address_var.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
 
-
-def addressVar(programList, lineNo, var, destReg):
-    template = open("templates/t_address_var.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "$<N>,":
-                tempLine.append("$" + var + ",")
-            elif word == "<destreg>":
-                tempLine.append(destReg)
-            elif word == "<destreg>,":
-                tempLine.append(destReg + ",")
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+    return myList
 
 
-'''
-Method: addressVec
-Parameters: programList (list), lineNo (integer), argReg (register), destReg
- (register)
-Description: Method used to write the template "t_address_vec.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def p(direct, ctx, pList):
+    global inP
+    myList = pList
+    if direct == "enter":
+        inP = True
+        pass
+    elif direct == "exit":
+        inP = False
+        pass
+    return myList
 
 
-def addressVec(programList, lineNo, argReg, destReg):
-    template = open("templates/t_address_vec.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<argreg-N+1>,":
-                tempLine.append(argReg + ",")
-            elif word == "<destreg>":
-                tempLine.append(destReg)
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def l(direct, ctx, pList):
+    global inP
+    global inD
+    myList = pList
+    if direct == "enter":
+        if inP:
+            addPar(ctx.start.text)
+        elif inD:
+            addVar(ctx.start.text)
+    elif direct == "exit":
+        pass
+    return myList
 
 
-'''
-Method: allocate
-Parameters: programList (list), lineNo (integer), num (number)
-Description: Method used for allocating local variables in a function, based
- on the template "t_allocate.asm"
-Returns: lineNo as an integer.
-'''
+def d(direct, ctx, pList):
+    global inD
+    myList = pList
+    if direct == "enter":
+        inD = True
+        pass
+    elif direct == "exit":
+        inD = False
+        pass
 
 
-def allocate(programList, lineNo, num):
-    # Add template in file at given lineNo
+def s(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        # Need to find out which branch to follow
+        # Because of Node R, there's an extra dependency for things
+        text = ctx.start.text
+        tmplist = ["", "endif", "endwhile", "end", ";"]
+        if text == "if":
+            myList.append(getDependencies(3))
+            myList.append("if")
+        elif text == "while":
+            myList.append(getDependencies(3))
+            myList.append("while")
+        elif text in tmplist:
+            # Epsilon (Actually R)
+            myList.append(getDependencies(1))
+            myList.append("epsilon")
+            pass
+        else:  # text == ident
+            myList.append(getDependencies(3))
+            myList.append("ident")
 
-    # Determine number of local vars to allocate
+    elif direct == "exit":
+        myData = nodes[ctx]
 
-    # Replace <NUM> with num of local vars to allocate
-    template = open("templates/t_allocate.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "$<NUM>,":
-                tempLine.append("$" + str(num) + ",")
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+        dep1 = None
+        dep2 = None
+        dep3 = None
+        tem1 = None
+        tem2 = None
+        tem3 = None
+        if isinstance(vals[myList[1][0]], list):
+            dep1 = vals[myData[1][0]][0]
+            tem1 = vals[myData[1][0]][1]
+        else:
+            dep1 = vals[myData[1][0]]
 
-
-'''
-Method: function
-Parameters: programList (list), lineNo (integer), name (string), funcNum
- (integer)
-Description: Method used for writing a function definition, based on the
- template "t_function.asm"
-Returns: lineNo as an integer.
-'''
-
-
-def function(programList, lineNo, name, funcNum):
-    global parseTreeIndex, tokensIndex
-    # Add template in file at given lineNo
-
-    # Replace <name> with function name
-
-    # In template, replace <allocate> with allocation of variables
-
-    # In template, replaces <body> with body of function
-
-    # tokensIndex should be at index of "func"
-    print("Function called!", parseTree[parseTreeIndex], parseTreeIndex)
-
-    if parseTree[parseTreeIndex] != ("f", "enter"):
-        sys.exit(1)
-    parseTreeIndex += 1
-
-    # SECTION FOR GETTING PARS & VARS IN LIST =================================
-    listPars = []
-    listVars = []
-
-    # At this point tokensIndex should be pointing at the function name
-    # So we want to traverse the parameters and add them to listPars, with
-    #  the parameter as key and index as value
-    tokensIndex += 1
-    if tokens.tokens[tokensIndex].text != "(":
-        print("Something went wrong in method 'function'")
-        sys.exit(1)
-    tokensIndex += 1
-    while tokens.tokens[tokensIndex].text != ")":
-        if tokens.tokens[tokensIndex].text != ",":
-            listPars.append(tokens.tokens[tokensIndex].text)
-        tokensIndex += 1
-
-    # After that should come the declaration of variables, so we can traverse
-    #  this and add them to listVars in the same way as the parameters
-    # tokensIndex should be pointing at ")" now
-    # So next token should be "var" if there are variables declared
-    tokensIndex += 1
-    if tokens.tokens[tokensIndex].text == 'var':
-        tokensIndex += 1
-        while tokens.tokens[tokensIndex].text != ";":
-            if tokens.tokens[tokensIndex].text != ',':
-                listVars.append(tokens.tokens[tokensIndex].text)
-    tokensIndex = 0
-
-    # SECTION FOR GETTING PARS & VARS IN LIST =================================
-
-    template = open("templates/t_function.asm", "r")
-    templateInserted = False
-    # i = 0
-    for line in template.readlines():
-        # if i > 1:
-            # break
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            # print("\nLINE\n", line)
-            # print(line[i], i)
-            # print("word:", word)
-            # print("name:", name)
-            templateInserted = False
-            if word == "<name>":
-                tempLine.append(name)
-            elif word == "<name>:":
-                tempLine.append(name + ":")
-            elif word == "<name>,":
-                tempLine.append(name + ",")
-            elif word == "<allocate>":
-                # Look over tokens - between var & ;, number of tokens
-                #  (excluding ',') is the number of variables to be declared
-                templateInserted = True
-                lineNo = allocate(programList, lineNo, len(listVars))
-            elif word == "<insert>":
-                templateInserted = True
-                # TODO
-                sIndex = parseTree.index(("s", "enter"))
-                sString = ctxTree[sIndex]
-                if sString.startswith("if"):
-                    t_if(programList, lineNo)
-                elif sString.startswith("while"):
-                    t_while(programList, lineNo)
-                else:
-                    # Must start with IDENT
-                    pass
+        if len(myData[1]) >= 2:
+            if isinstance(vals[myList[1][1]], list):
+                dep2 = vals[myData[1][1]][0]
+                tem2 = vals[myData[1][1]][1]
             else:
-                tempLine.append(word)
-        print("FINAL LINE: ", tempLine)
-        line = tempLine
-        if templateInserted:
-            programList.insert(lineNo + 1, "\n")
+                dep2 = vals[myData[1][1]]
+
+        if len(myData[1]) >= 3:
+            if isinstance(vals[myList[1][2]], list):
+                dep3 = vals[myData[1][2]][0]
+                tem3 = vals[myData[1][2]][1]
+            else:
+                dep3 = vals[myData[1][2]]
+
+        # WHILE AND IF NEED TO REPLACE <TRUE> AND <FALSE> IN C TEMPLATE
+        # C will be the first dependency in both IF and WHILE
+        num = getVal()
+
+        template = None
+        if myData[2] == "if":
+            tem1 = tem1.replace("<true>", ".true-branch<NUM>")
+            tem1 = tem1.replace("<false>", ".false-branch<NUM>")
+
+            template = getFileAsString("templates/t_if.asm")
+            template = template.replace("<template>", tem1)
+            template = template.replace("<NUM>", str(num))
+            template = template.replace("<true-branch>", tem2)
+        elif myData[2] == "while":
+            tem1 = tem1.replace("<true>", ".loopbegin<NUM>")
+            tem1 = tem1.replace("<false>", ".loopend<NUM>")
+
+            template = getFileAsString("templates/t_while.asm")
+            template = template.replace("<template>", tem1)
+            template = template.replace("<NUM>", str(num))
+            template = template.replace("<loop-body>", tem2)
+        elif myData[2] == "epsilon":
+            template = tem1
+        elif myData[2] == "ident":
+            template = getFileAsString("templates/t_ident_=_factor.asm")
+            template = template.replace("<load-rax>", load("__TEMP__", "rax"))
+            template = template.replace("<load-r10>", load(dep1, "r10"))
+            template = template.replace("<X>", str(num))
+
+        # Concaternate templates
+        # tem3 = R template if it exists
+        # tem2 = loop body template if it exists
+        # tem1 = IDENT or condition template
+        # So tem3 should come last
+        # tem2 and tem1 shouldnt go anywhere if they were in IF or WHILE
+        if myData[2] == "if" or myData[2] == "while":
+            if tem3 is not None:
+                template = template + tem3
+        if myData[2] == "ident":
+            if tem3 is not None:
+                template = template + tem3
+            if tem2 is not None:
+                template = tem2 + template
+
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myData[0]]
+        vals[myData[0]] = []
+        vals[myData[0]].append(tempVal)
+        vals[myData[0]].append(template)
+
+        myList = myData
+
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
+
+    return myList
+
+
+def r(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(1))
+        if ctx.start.text == ";":
+            myList.append("s")
         else:
-            programList.insert(lineNo + 1, line)
-        lineNo += 1
-        # i += 1
-    template.close()
-    return lineNo
+            myList.append("ep")
+    elif direct == "exit":
+        if vals[myList[1][0]] is None:
+            return myList
+        dep = vals[myList[1][0]][0]
+        tem = vals[myList[1][0]][1]
+    return myList
 
 
-'''
-Method: genConst
-Parameters: programList (list), lineNo (integer), const (number)
-Description: Method used for allocating memory for a constant numerical value,
- based on the template "t_gen_const.asm"
-Returns: lineNo as an integer.
-'''
+def getOp(ctx):
+    text = cts.start.text
+    if text == "add":
+        return "addps"
+    elif text == "min":
+        return "minps"
+    elif text == "mult":
+        return "mulps"
+    elif text == "div":
+        return "divps"
+    elif text == "min":
+        return "minps"
 
 
-def genConst(programList, lineNo, const):
-    # Add template in file at given lineNo
-    template = open("templates/t_gen_const.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == ".const<X>:":
-                tempLine.append(".const" + const + ":")
-            elif word == "<X>":
-                tempLine.append(const)
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def load(value, register):
+    # Need to inspect value to decide which template to use
+    if value.isnumeric():  # Constant
+        template = getFileAsString("templates/t_address_con.asm")
+        template = template.replace("<X>", value)
+        template = template.replace("<destreg>", "%" + register)
+        return template
+    elif value in varis:  # Variable
+        template = getFileAsString("templates/t_address_var.asm")
+        template = template.replace("<N>", str(varis.index(value) + 1))
+        template = template.replace("<destreg>", "%" + register)
+        return template
+    elif value in pars:  # Parameter
+        template = getFileAsString("templates/t_address_vec.asm")
+        template = template.replace("<argreg-N+1>",
+                         "%" + registers[pars.index(value) + 1])
+        template = template.replace("<destreg>", "%" + register)
+        return template
 
 
-'''
-Method: identEqFactor
-Parameters: programList (list), lineNo (integer)
-Description: Method used to write the template "t_ident_=_factor.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def e(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+
+        # Need to find out which branch to follow
+        text = ctx.start.text
+        if text == "add":
+            # This is where you will store your dependencies
+            # myList[1] is list of dependencies
+            myList.append(getDependencies(2))
+            myList.append("op")
+        elif text == "minus":
+            myList.append(getDependencies(2))
+            myList.append("op")
+        elif text == "mult":
+            myList.append(getDependencies(2))
+            myList.append("op")
+        elif text == "div":
+            myList.append(getDependencies(2))
+            myList.append("op")
+        elif text == "min":
+            myList.append(getDependencies(2))
+            myList.append("op")
+        elif text == "(":
+            myList.append(getDependencies(1))
+            myList.append("e")
+        elif text.isnumeric():  # text == num
+            myList.append(getDependencies(1))
+            myList.append("num")
+        else:  # text == ident
+            myList.append(getDependencies(1))
+            myList.append("ident")
+
+    elif direct == "exit":
+        # Lookup in node, get data from when you entered this node
+        myData = nodes[ctx]
+        # STILL NEED TO CHECK IF DEPENDENTS HAVE CODE SNIPPETS
+        dep1 = None
+        dep2 = None
+        tem1 = None
+        tem2 = None
+
+        if isinstance(vals[myList[1][0]], list):
+            dep1 = vals[myData[1][0]][0]
+            tem1 = vals[myData[1][0]][1]
+        else:
+            dep1 = vals[myData[1][0]]
+
+        if len(myData[1]) >= 2:
+            if isinstance(vals[myList[1][1]], list):
+                dep2 = vals[myData[1][1]][0]
+                tem2 = vals[myData[1][1]][1]
+            else:
+                dep2 = vals[myData[1][1]]
+
+        template = None
+        if myData[2] == "op":
+            template = getFileAsString("templates/t_ident_=_op(factor,_factor).asm")
+            template = template.replace("<load-source1-rax>", load(dep1, "rax"))
+            template = template.replace("<load-source2-r10>", load(dep2, "r10"))
+            template = template.replace("<load-dest-r11>", load("__TEMP__", "r11"))
+            template = template.replace("<operation>", getOp(ctx))
+            template = template.replace("<X>", str(getVal()))
+
+            # If const, need to remove lines in template
+            if vals[myData[1][0]].isnumeric():
+                template = template.replace("addq   $16,    " + "%" + "rax", "")
+
+            if vals[myData[1][1]].isnumeric():
+                template = template.replace("addq   $16,    " + "%" + "r10", "")
+
+        elif myData[2] == "e":
+            if tem1 is not None:
+                template = tem1
+        elif myData[2] == "num" or myData[2] == "ident":
+            template = getFileAsString("templates/t_ident_=_factor.asm")
+            template = template.replace("<load-rax>", load(dep1, "rax"))
+            template = template.replace("<load-r10>", load("__TEMP__", "r10"))
+            template = template.replace("<X>", str(getVal()))
+
+            # If const, need to remove lines in template
+            if myData == "num":
+                template = template.replace("addq   $16,    " + "%" + "rax", "")
+
+        # Concaternate templates
+        if tem2 is not None:
+            template = tem2 + template
+        if tem1 is not None:
+            template = tem1 + template
+
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myData[0]]
+        vals[myData[0]] = []
+        vals[myData[0]].append(tempVal)
+        vals[myData[0]].append(template)
+
+        myList = myData
+
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
+
+    return myList
 
 
-def identEqFactor(programList, lineNo):
-    template = open("templates/t_ident_=_factor.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<load-rax>":
-                tempLine.append("")  # TODO
-            elif word == "<load-r10>":
-                tempLine.append("")  # TODO
-            elif word == ".loop-end<X>":
-                tempLine.append(".loop-end" + num)
-            elif word == ".loop-end<X>:":
-                tempLine.append(".loop-end" + num + ":")
-            elif word == ".loop-begin<X>":
-                tempLine.append(".loop-begin" + num)
-            elif word == ".loop-begin<X>:":
-                tempLine.append(".loop-begin" + num + ":")
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def c(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(2))
+        if "<" in ctx.getText():
+            myList.append("less")
+        elif ">" in ctx.getText():
+            myList.append("greater")
+    elif direct == "exit":
+
+        dep = None
+        tem = None
+        if isinstance(vals[myList[1][0]], list):
+            dep = vals[myList[1][0]][0]
+            tem = vals[myList[1][0]][1]
+        else:
+            dep = vals[myList[1][0]]
+        template = getFileAsString("templates/t_sum.asm")
+        template = template.replace("<load-source-rax>", load("__TEMP__", "rax"))
+        template = template.replace("<X>", str(getVal()))
+        template = template.replace("<NUMBER>", vals[myList[1][1]])
+        if dep.isnumeric():
+            template = template.replace("addq    $16,    " + "%" + "rax", "")
+
+        # Concaternate templates
+        if tem is not None:
+            template = tem + template
+
+        # Change list[0] to list, 0 = depVal, 1 = assembly template
+        tempVal = vals[myList[0]]
+        vals[myList[0]] = []
+        vals[myList[0]].append(tempVal)
+        vals[myList[0]].append(template)
+
+        if vals[myList[0]][0] is None:
+            vals[myList[0]][0] = "none"
+
+    return myList
 
 
-'''
-Method: identEqOpFactorFactor
-Parameters: programList (list), lineNo (integer), num (number)
-Description: Method used to write the template
- "t_ident_=_op(factor,_factor).asm" to file, filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def ident(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(0))
+        myList.append(ctx.start.text)
+    elif direct == "exit":
+        # Defer finding out par vs var for later
+        #  I still need the text at this point
+        vals[myList[0]] = myList[2]
+    return myList
 
 
-def identEqOpFactorFactor(programList, lineNo, num):
-    template = open("templates/t_ident_=_op(factor,_factor).asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<load-source1-rax>":
-                tempLine.append("")  # TODO
-            elif word == "<load-source2-r10>":
-                tempLine.append("")  # TODO
-            elif word == "<load-dest-r11>":
-                tempLine.append("")  # TODO
-            elif word == ".loop-begin<X>":
-                tempLine.append(".loop-begin" + num)
-            elif word == ".loop-begin<X>:":
-                tempLine.append(".loop-begin" + num + ":")
-            elif word == ".loop-end<X>":
-                tempLine.append(".loop-end" + num)
-            elif word == ".loop-end<X>:":
-                tempLine.append(".loop-end" + num + ":")
-            elif word == "<operation>":
-                tempLine.append("")
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def num(direct, ctx, pList):
+    myList = pList
+    if direct == "enter":
+        myList.append(getDependencies(0))
+        myList.append(ctx.start.text)
+        addConst(myList[2])
+    elif direct == "exit":
+        if myList[2] in consts:
+            vals[myList[0]] = myList[2]
+    return myList
 
 
-'''
-Method: t_if
-Parameters: programList (list), lineNo (integer)
-Description: Method used to write the template "t_if.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def getFileAsString(path):
+    file = open(path, "r")
+    string = file.read()
+    file.close()
+    return string
 
 
-def t_if(programList, lineNo):
-    template = open("templates/t_if.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<template>":
-                tempLine.append("")  # TODO
-            elif word == "<true-branch>":
-                tempLine.append("")  # TODO
-            elif word == "<false-branch>":
-                tempLine.append("")  # TODO
-            elif word == ".true-branch<NUM>":
-                tempLine.append(".true-branch" + num)
-            elif word == ".false-branch<NUM>":
-                tempLine.append(".false-branch" + num)
-            elif word == ".endif<NUM>":
-                tempLine.append(".endif" + num)
-            elif word == ".endif<NUM>:":
-                tempLine.append(".endif" + num + ":")
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def getVal():
+    global valCounter
+    returnVal = valCounter
+    valCounter += 1
+    return returnVal
 
 
-'''
-Method: t_sum
-Parameters: programList (list), lineNo (integer), num (number)
-Description: Method used to write the template "t_sum.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def getDependencies(num):
+    returnList = []
+    for i in range(num):
+        returnList.append(getVal())
+        vals[returnList[-1]] = None
+    return returnList
 
 
-def t_sum(programList, lineNo, num):
-    template = open("templates/t_sum.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == "<load-source-rax>":
-                tempLine.append("")  # TODO
-            elif word == ".loop-begin<X>":
-                tempLine.append(".loop-begin" + num)
-            elif word == ".loop-begin<X>:":
-                tempLine.append(".loop-begin" + num + ":")
-            elif word == ".loop-end<X>":
-                tempLine.append(".loop-end" + num)
-            elif word == ".loop-end<X>:":
-                tempLine.append(".loop-end" + num + ":")
-            elif word == "<true>":
-                tempLine.append("")  # TODO
-            elif word == "<false>":
-                tempLine.append("")  # TODO
-            elif word == "<NUMBER>":
-                tempLine.append("")  # TODO
-            elif word == ".L<NUMBER>:":
-                tempLine.append("")  # TODO
-            elif word == ".L<NUMBER>,":
-                tempLine.append("")  # TODO
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def addPar(par):
+    if par not in pars:
+        pars.append(par)
 
 
-'''
-Method: t_while
-Parameters: programList (list), lineNo (integer), num (number)
-Description: Method used to write the template "t_while.asm" to file,
- filling in where necessary.
-Returns: lineNo as an integer.
-'''
+def addVar(var):
+    if var not in varis:
+        varis.append(var)
 
 
-def t_while(programList, lineNo, num):
-    template = open("templates/t_while.asm", "r")
-    for line in template.readlines():
-        tempLine = []
-        for i, word in enumerate(line.split()):
-            if word == ".loopcond<NUM>":
-                tempLine.append(".loopcond" + num)
-            elif word == ".loopcond<NUM>:":
-                tempLine.append(".loopcond" + num + ":")
-            elif word == ".loopbegin<NUM>":
-                tempLine.append(".loopbegin" + num)
-            elif word == ".loopend<NUM>":
-                tempLine.append(".loopend" + num)
-            elif word == "<loop-body>":
-                tempLine.append("")  # TODO
-            elif word == "<template>":
-                tempLine.append("")  # TODO
-        line = tempLine
-        programList.insert(lineNo + 1, line)
-        lineNo += 1
-    template.close()
-    return lineNo
+def addConst(const):
+    if const not in consts:
+        consts.append(const)
 
-'''
-Set-up code used to initalise ANTLR-related objects, as well as declare
- global variables needed in multiple functions
-'''
-parseTree = []
-parseTreeIndex = 0
-ctxTree = []
 
-ifCount = 0
-whileCount = 0
+def dispatcher(node, direct, ctx):
 
-nP = False
-funcPars = []
-funcVars = []
+    if direct == "enter":
+        enter(node, ctx)
+    elif direct == "exit":
+        exit(node, ctx)
 
 char_stream = FileStream(sys.argv[1])
 lexer = VPLLexer(char_stream)
 tokens = CommonTokenStream(lexer)
-tokensIndex = 0
 parser = VPLParser(tokens)
-tree = parser.start()
-listener = myListener.myListener(eventHandler)
-walker = ParseTreeWalker()
-walker.walk(listener, tree)
+root = parser.start()
 
-if __name__ == '__main__':
-    main()
+listener = myListener.myListener(dispatcher)
+walker = ParseTreeWalker()
+walker.walk(listener, root)

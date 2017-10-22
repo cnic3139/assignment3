@@ -1,1 +1,1 @@
-func a ( b ) ; ; if 2 < 3 then endif end
+func trivial ( b ) end

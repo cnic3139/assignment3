@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 /* alignment macro: aligns a memory block a to multiplies of a */
 #define align(s,a) (((size_t)(s) + ((a) - 1)) & ~((size_t) (a) - 1))
 /* Alignment for SSE unit */
@@ -13,9 +14,12 @@ int main (void) {
 
 	a = (float *) align(a, SSE_ALIGN);
 
-	a = 10;
+	for (int i = 0; i < NUM; i++) {
+		a[i] = 10;
+	}
 
 	trivial(NUM, a);
-
-	printf("value of a is %f\n", a);
+	for (int i = 0; i < NUM; i++) {
+		printf("value of a is %f\n", a[i]);
+	}
 }

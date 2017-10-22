@@ -1,6 +1,6 @@
 .text
 .global <name>
-.type <name>, @function
+#.type <name>, @function
 .p2align 4,,15
 
 <name>:
