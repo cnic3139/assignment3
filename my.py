@@ -26,6 +26,18 @@ pars = []
 varis = []
 consts = []
 
+registers = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
+
+inP = False
+inD = False
+
+
+def getFileAsString(path):
+    file = open(path, "r")
+    string = file.read()
+    file.close()
+    return string
+
 
 def getVal():
     global valCounter
@@ -40,6 +52,21 @@ def getDependencies(num):
         returnList.append(getVal())
         vals[returnList[-1]] = None
     return returnList
+
+
+def addPar(par):
+    if par not in pars:
+        pars.append(par)
+
+
+def addVar(var):
+    if var not in varis:
+        varis.append(var)
+
+
+def addConst(const):
+    if const not in consts:
+        consts.append(const)
 
 
 def dispatcher(node, direct, ctx):
@@ -174,10 +201,13 @@ def f(direct, ctx, list):
         pass
     elif direct == "exit":
         # Declare memory for vars and consts
-        pass
-    return myList
 
-inP = False
+        myData = nodes[ctx]
+
+        if myData[2] == "":
+            pass
+
+    return myList
 
 
 def p(direct, ctx, list):
@@ -191,21 +221,6 @@ def p(direct, ctx, list):
     return myList
 
 
-def addPar(par):
-    if par not in pars:
-        pars.append(par)
-
-
-def addVar(var):
-    if var not in varis:
-        varis.append(var)
-
-
-def addConst(const):
-    if const not in consts:
-        consts.append(const)
-
-
 def l(direct, ctx, list):
     myList = list
     if direct == "enter":
@@ -216,8 +231,6 @@ def l(direct, ctx, list):
     elif direct == "exit":
         pass
     return myList
-
-inD = False
 
 
 def d(direct, ctx, list):
@@ -235,17 +248,69 @@ def s(direct, ctx, list):
     if direct == "enter":
         pass
     elif direct == "exit":
-        pass
+        myData = nodes[ctx]
+
+        if myData[2] == "if":
+            template = getFileAsString("t_if.asm")
+            template.replace("<template>", "")
+            template.replace("<NUM>", "")
+        elif myData[2] == "while":
+            template = getFileAsString("t_while.asm")
+            template.replace("<template>", "")
+            template.replace("<NUM>", "")
+            template.replace("<loop-body>")
+        elif myData[2] == "s":
+            pass
+        elif myData[2] == "ident":
+            template = getFileAsString("")
+        elif myData[2] == "ep":
+            pass  # Do we actually do nothing in this instance?
     return myList
 
 
 def r(direct, ctx, list):
     myList = list
     if direct == "enter":
-        pass
+        myList.append(getDependencies(1))
+        myList.append("s")
     elif direct == "exit":
         pass
     return myList
+
+
+def getOp(ctx):
+    text = cts.start.text
+    if text == "add":
+        return "addps"
+    elif text == "min":
+        return "minps"
+    elif text == "mult":
+        return "mulps"
+    elif text == "div":
+        return "divps"
+    elif text == "min":
+        return "minps"
+
+
+def load(key, register):
+    value = vals[key]
+    # Need to inspect value to decide which template to use
+    if value.isnumeric():  # Constant
+        template = getFileAsString("t_address_con.asm")
+        template.replace("<X>", value)
+        template.replace("<destreg>", "%" + register)
+        return template
+    elif value in varis:  # Variable
+        template = getFileAsString("t_address_var.asm")
+        template.replace("<N>", str(varis.indexOf(value) + 1))
+        template.replace("<destreg>", "%" + register)
+        return template
+    elif value in pars:  # Parameter
+        template = getFileAsString("t_address_vec.asm")
+        template.replace("<argreg-N+1>",
+                         "%" + registers[pars.indexOf(value) + 1])
+        template.replace("<destreg>", "%" + register)
+        return template
 
 
 def e(direct, ctx, list):
@@ -258,7 +323,7 @@ def e(direct, ctx, list):
             # This is where you will store your dependencies
             # myList[1] is list of dependencies
             myList.append(getDependencies(2))
-            myList.append("op")  # myList[2] is how to calc value
+            myList.append("op")
         elif text == "minus":
             myList.append(getDependencies(2))
             myList.append("op")
@@ -274,13 +339,10 @@ def e(direct, ctx, list):
         elif text == "(":
             myList.append(getDependencies(1))
             myList.append("e")
-        elif text.isnumeric():
-            # text == "num"
+        elif text.isnumeric():  # text == "num"
             myList.append(getDependencies(1))
             myList.append("num")
-            addConst(text)
-        else:
-            # text == "ident"
+        else:  # text == "ident"
             myList.append(getDependencies(1))
             myList.append("ident")
 
@@ -288,35 +350,30 @@ def e(direct, ctx, list):
         # Lookup in node, get data from when you entered this node
         myData = nodes[ctx]
 
-        # Now we should have all dependents accounted for, and we can
-        #  get the value of this node and put it in the right place.
-
-        # Check myData[2], then pop it and replace it with code snippet?
+        template = None
         if myData[2] == "op":
-            file = open("t_ident_=_op(factor,_factor).asm", "r")
-            template = file.read()
-            file.close()
-            template.replace("<load-source1-rax>", "")
-            template.replace("<load-source2-r10>", "")
-            template.replace("<load-dest-r11>", "")  # Wait until S???
-            template.replace("<operation>", "")
-            template.replace("<X>", "")
+            template = getFileAsString("t_ident_=_op(factor,_factor).asm")
+            template.replace("<load-source1-rax>", load(myData[1][0], "rax"))
+            template.replace("<load-source2-r10>", load(myData[1][1], "r10"))
+            template.replace("<load-dest-r11>", load())  # Wait until S???
+            template.replace("<operation>", getOp(ctx))
+            template.replace("<X>", str(getVal()))
         elif myData[2] == "e":
             pass  # I dunno what to do here, just give all its stuff to parent?
         elif myData[2] == "num":
-            file = open("t_ident_=_factor.asm", "r")
-            template = file.read()
-            file.close()
+            template = getFileAsString("t_ident_=_factor.asm")
             template.replace("<load-rax>", "")
             template.replace("<load-r10>", "")  # Wait until S???
             template.replace("<X>", "")
         elif myData[2] == "ident":
-            file = open("t_ident_=_factor.asm", "r")
-            template = file.read()
-            file.close()
+            template = getFileAsString("t_ident_=_factor.asm")
             template.replace("<load-rax>", "")
             template.replace("<load-r10>", "")  # Wait until S???
-            template.replace("<X>", "")
+            template.replace("<X>", str(getVal()))
+
+        # Put assembly template as last element in list for access by parents
+        myData.pop()
+        myData.append(template)
 
     return myList
 
@@ -333,16 +390,22 @@ def c(direct, ctx, list):
 def ident(direct, ctx, list):
     myList = list
     if direct == "enter":
-        pass
+        myList.append(getDependencies(0))
+        myList.append(ctx.start.text)
     elif direct == "exit":
-        pass
+        # Defer finding out par vs var for later
+        #  I still need the text at this point
+        vals[myList[0]] = myList[2]
     return myList
 
 
 def num(direct, ctx, list):
     myList = list
     if direct == "enter":
-        pass
+        myList.append(getDependencies(0))
+        myList.append(ctx.start.text)
+        addConst(myList[2])
     elif direct == "exit":
-        pass
+        if myList[2] is in consts:
+            vals[myList[0]] = myList[2]
     return myList
